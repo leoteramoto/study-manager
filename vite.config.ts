@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       cspPlugin(),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         injectRegister: false,
         includeAssets: ['favicon.svg', 'tema.js', 'icons/*.png', 'sounds/*'],
         manifest: {
