@@ -52,3 +52,14 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - Ao propor algo, separe o que é **requisito confirmado**, o que é **sugestão** e o que é **pendência**.
 - Não implemente itens das listas "Depois" ou "Fora de escopo" sem autorização.
 - Mantenha o README atualizado.
+
+## Decisões técnicas da Fase 1
+- **HashRouter** (`/#/cadastro`): o GitHub Pages não tem fallback de SPA, e o hash funciona em qualquer hospedagem estática (e no futuro Tauri).
+- **Tema no localStorage** (chave `study-manager:tema`: `sistema` | `claro` | `escuro`). É preferência visual: fica fora da tabela `configuracoes` e **fora do backup**. O `public/tema.js` aplica o tema antes do React, para não piscar.
+- **CSP com `style-src 'self' 'unsafe-inline'`**: componentes Radix/shadcn injetam `<style>` em tempo de execução. Scripts continuam restritos a `'self'`. A meta CSP só entra no build de produção, porque o dev server do Vite usa scripts inline.
+- **TypeScript 6.0**, não 7.x: o typescript-eslint exige `typescript <6.1.0`. Só atualizar quando ele aceitar o 7.
+- **Deploy travado pela variável `DEPLOY_PAGES`**: o job de deploy do `ci.yml` só roda na `main` quando a variável do repositório `DEPLOY_PAGES` vale `true`.
+- **Persistência pedida sem bloquear a abertura**: `navigator.storage.persist()` é chamado só na primeira execução e **não é aguardado**. No Firefox ele abre um aviso de permissão e a promessa só termina quando o usuário responde, o que deixava o app em tela branca.
+
+### Pendências
+- **Fase 4:** trocar o `registerType: 'autoUpdate'` do PWA (em `vite.config.ts`) por um aviso de nova versão (`prompt`), para não recarregar a página com o cronômetro rodando.
