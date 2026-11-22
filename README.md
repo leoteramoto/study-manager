@@ -14,7 +14,7 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 | ---- | ----------------------------------------------- | --------- |
 | 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
 | 2    | Cadastro de objetivos e matérias                | Concluída |
-| 3    | Planejamento e tela Principal                   | A fazer   |
+| 3    | Planejamento e tela Principal                   | Concluída |
 | 4    | Cronômetro                                      | A fazer   |
 | 5    | Estatísticas e lançamentos manuais              | A fazer   |
 | 6    | Backup, configurações e acabamento              | A fazer   |
@@ -30,6 +30,18 @@ Em **Cadastro**, crie seus **objetivos** (ex.: "Polícia Federal", sigla `PF`) e
 - O objetivo de uma matéria não pode ser trocado. Para usar a mesma matéria em outro objetivo, crie uma matéria nova nele.
 - Nada é excluído: objetivos e matérias são **arquivados**. Arquivar um objetivo arquiva as matérias dele, e matérias arquivadas saem do planejamento. Para vê-los, ative **Mostrar arquivados**. Desarquivar um objetivo traz as matérias de volta; uma matéria só pode ser desarquivada se o objetivo dela estiver ativo.
 - A ordem é ajustada com as setas de subir e descer.
+
+### Principal (planejamento do mês)
+
+Na tela **Principal** ficam o painel do mês e a tabela do planejamento.
+
+- **Editar planejamento** abre a lista de matérias ativas, agrupadas por objetivo. Marque as que entram na meta do mês; elas podem ser de objetivos diferentes. Tirar uma matéria do planejamento não apaga o tempo estudado: ele continua no total do mês.
+- **Meta mensal:** em horas, de 0,5 a 744. Digite no card do painel e tecle Enter (ou saia do campo); Esc cancela. Depois de definida, a meta não fica vazia: apagar o campo volta ao último valor.
+- **Peso:** de 0,1 a 100, editado direto na tabela. Aceita vírgula ou ponto (`1,5` ou `1.5`); valores com mais de uma casa são arredondados (`1,25` vira `1,3`). Zero, negativo ou campo vazio voltam ao último valor.
+- **Meta da matéria** = meta mensal × peso ÷ soma dos pesos. Ex.: meta de 100 h com pesos 2, 1 e 1 dá 50h00, 25h00 e 25h00.
+- **% concluída** pode passar de 100%. Quando o tempo estudado chega à meta, o tempo restante mostra 0h00 e o selo **Meta atingida**. O tempo restante arredonda os minutos para cima, então só mostra 0h00 quando a meta foi mesmo atingida.
+- O painel soma **todo** o tempo do mês, inclusive de matérias fora do planejamento e de lançamentos manuais.
+- O mês segue o fuso configurado e vira sozinho, mesmo com o app aberto. Nenhum dado é zerado: o planejamento, os pesos e a meta continuam no mês seguinte.
 
 ## Requisitos
 
@@ -54,6 +66,8 @@ npm run dev       # servidor de desenvolvimento em http://localhost:5173
 npm run lint      # ESLint + checagem de tipos
 npm run format    # formata o código com o Prettier
 ```
+
+No modo de desenvolvimento, a tela Principal mostra o botão **Popular dados de teste**, que cria objetivos, matérias, planejamento, meta e registros de exemplo. Ele só funciona com o banco vazio e não existe no build de produção. Para recomeçar do zero, apague o banco `study-manager` nas ferramentas do navegador (Aplicativo → IndexedDB).
 
 O service worker do PWA não roda no modo de desenvolvimento. Para testar o modo offline e a instalação, use o build de produção:
 
