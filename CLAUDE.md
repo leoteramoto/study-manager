@@ -72,3 +72,13 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 
 ### Pendências
 - **Fase 4:** trocar o `registerType: 'autoUpdate'` do PWA (em `vite.config.ts`) por um aviso de nova versão (`prompt`), para não recarregar a página com o cronômetro rodando.
+
+## Decisões da Fase 3 (casos não cobertos pela especificação, confirmados pelo usuário)
+- **% geral e tempo restante do painel** usam **todo** o tempo do mês (inclui matérias fora do planejamento e lançamentos manuais) ÷ meta mensal.
+- **Números decimais:** `interpretarNumeroBr` aceita **vírgula e ponto** como separador decimal (não há separador de milhar nesses campos: peso ≤ 100, meta ≤ 744). "1,5" → 1.5; "1.5" → 1.5.
+- **Peso com mais de uma casa** é **arredondado para 0,1** e gravado ("1,25" → 1,3). O arredondamento é imune a erro de ponto flutuante (1,15 → 1,2; 1,05 → 1,1; 2,25 → 2,3); nunca usar `Math.round(x * 10)` direto.
+- **Meta mensal não pode ser apagada:** campo vazio ou inválido volta ao último valor válido. Ela só fica vazia antes da primeira definição.
+- **Arredondamento na exibição:** tempo estudado e metas arredondam os minutos **para baixo**; o **tempo restante arredonda para cima**, para nunca mostrar "0h00" sem a meta estar atingida (40 s faltando → "0h01").
+- **Virada do mês com o app aberto:** o mês da tela Principal é calculado a partir de `useAgora` (atualizado a cada minuto) no fuso configurado, e a consulta de registros depende dele.
+- **Seed de desenvolvimento:** botão "Popular dados de teste" na Principal, só em `import.meta.env.DEV`; só roda com o banco vazio e não apaga nada. O texto não pode aparecer no `dist/`.
+- **Tabela principal** mostra só as matérias do planejamento. Peso e meta são gravados no blur/Enter (Esc cancela). Remover do planejamento não pede confirmação (nenhum registro é apagado).
