@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "icones": "node scripts/gerar-icones.mjs"
+    "icones": "node scripts/gerar-icones.mjs",
+    "sons": "node scripts/gerar-sons.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",

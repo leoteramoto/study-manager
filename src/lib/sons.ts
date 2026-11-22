@@ -1,8 +1,8 @@
-/** Sons de alerta disponíveis (RN25/RN38). Os arquivos de áudio entram na Fase 4. */
+/** Sons de alerta disponíveis (RN25/RN38). Arquivos gerados por scripts/gerar-sons.mjs. */
 export const SONS = [
-  { id: 'sino', nome: 'Sino', arquivo: 'sounds/sino.mp3' },
-  { id: 'digital', nome: 'Digital', arquivo: 'sounds/digital.mp3' },
-  { id: 'suave', nome: 'Suave', arquivo: 'sounds/suave.mp3' },
+  { id: 'sino', nome: 'Sino', arquivo: 'sounds/sino.wav' },
+  { id: 'digital', nome: 'Digital', arquivo: 'sounds/digital.wav' },
+  { id: 'suave', nome: 'Suave', arquivo: 'sounds/suave.wav' },
 ] as const
 
 export type IdSom = (typeof SONS)[number]['id']
