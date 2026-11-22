@@ -70,9 +70,6 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - **Confirmação só ao arquivar objetivo**; matéria é arquivada direto.
 - **Subir/descer troca com o vizinho da lista visível** (com arquivados ocultos, eles são ignorados).
 
-### Pendências
-- **Fase 4:** trocar o `registerType: 'autoUpdate'` do PWA (em `vite.config.ts`) por um aviso de nova versão (`prompt`), para não recarregar a página com o cronômetro rodando.
-
 ## Decisões da Fase 3 (casos não cobertos pela especificação, confirmados pelo usuário)
 - **% geral e tempo restante do painel** usam **todo** o tempo do mês (inclui matérias fora do planejamento e lançamentos manuais) ÷ meta mensal. Com meta definida e **planejamento vazio**, % e restante **são calculados** assim mesmo, e o aviso "Adicione matérias ao planejamento" continua. Só sem meta eles mostram "—".
 - **% nunca mostra 100% sem a meta atingida:** o arredondamento padrão vale, mas se ele der 100% ou mais com a meta não atingida, a tela mostra 99% (99,6% → 99%). Vale para o painel e para a tabela.
@@ -83,3 +80,20 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - **Virada do mês com o app aberto:** o mês da tela Principal é calculado a partir de `useAgora` (atualizado a cada minuto) no fuso configurado, e a consulta de registros depende dele.
 - **Seed de desenvolvimento:** botão "Popular dados de teste" na Principal, só em `import.meta.env.DEV`; só roda com o banco vazio e não apaga nada. O texto não pode aparecer no `dist/`.
 - **Tabela principal** mostra só as matérias do planejamento. Peso e meta são gravados no blur/Enter (Esc cancela). Remover do planejamento não pede confirmação (nenhum registro é apagado).
+
+## Decisões da Fase 4 (casos não cobertos pela especificação, confirmados pelo usuário)
+- **O relógio:** a fonte de ticks só avisa "verifique agora", nunca informa tempo. Todo cálculo usa o `Date` da thread principal. A fonte é injetável: Web Worker (padrão, não sofre o limite de timers de abas ocultas do Chrome) ou `setInterval` na thread principal (`VITE_FONTE_TICKS=principal`, usado no build do E2E para o `page.clock` controlar o tempo).
+- **Aba líder** via `navigator.locks` (lock `study-manager:cronometro`): só ela grava heartbeat, detecta suspensão e toca alertas; as outras só exibem.
+- **Recuperação (RN20) só quando nenhuma aba estava com a sessão** (app reaberto ou F5 na única aba). Aba nova com outra já rodando: nada. Aba que vira líder porque a antiga fechou: continua sem modal e sem pausa.
+- **Término do registro = fim do último trecho contado:** concluído → instante exato do fim do planejado; encerrado em andamento → o clique; encerrado pausado → o instante da pausa; recuperado → o último heartbeat. Pausar e continuar atualizam `ultimoHeartbeatEm`.
+- **Tempo não contado em pausa automática:** toda pausa automática (suspensão, aba congelada, aba descartada, recuperação) guarda o intervalo entre o último heartbeat e o instante em que o app percebeu a pausa, e oferece o botão **"Contar esse tempo"** (soma limitada ao planejado; se alcançar o planejado, vai para a confirmação como `concluido`). Nada é somado sem o clique.
+  - **Desvio do modelo de dados:** `sessaoAtiva` ganhou o campo `pausaDetectadaEm: string | null` (não indexado; sem nova versão do Dexie; `sessaoAtiva` não entra no backup).
+  - O aviso mostra o motivo detectado: `resume` da Page Lifecycle API → "O navegador congelou a aba"; `document.wasDiscarded` → "O navegador descarregou a aba"; senão → "Estudo pausado porque o computador ficou inativo". `freeze`/`resume` não distinguem com segurança congelamento de suspensão (o computador pode dormir com a aba congelada), por isso a decisão fica com o usuário.
+- **Confirmar é idempotente:** a transação relê a sessão; clique duplo ou duas abas gravam exatamente 1 registro.
+- **Som:** rejeição de `audio.play()` (autoplay bloqueado) é ignorada; destaque visual e notificação vêm antes e não dependem do som. O áudio é "destravado" no clique de Iniciar. Sons gerados por `scripts/gerar-sons.mjs` (WAV sintetizado, sem direitos autorais).
+- **Permissão de notificação (RN39) adiantada** para a Fase 4, numa seção de Configurações.
+- **Minutos:** valor inicial é o último usado, no localStorage (`study-manager:ultimaDuracaoMin`, preferência de tela, fora do banco e do backup); na primeira vez, 60.
+- **Espaço (RN26) global**, exceto com foco em campo de texto, select, checkbox, botão ou com diálogo aberto.
+- **Modal de confirmação global e não fechável:** abre sozinho em qualquer tela; só sai por Confirmar ou Cancelar. Com menos de 60 s, "Descartar" não pede 2ª confirmação.
+- **PWA com `registerType: 'prompt'`:** aviso "Nova versão disponível" no cabeçalho; "Atualizar" fica desabilitado enquanto houver sessão.
+- Se, ao fechar o trecho por suspensão/recuperação, o tempo já alcançou o planejado, a sessão vai para a confirmação como `concluido`. A `data` do registro usa o fuso configurado na confirmação, aplicado a `inicioEm`. A sessão continua se a matéria sair do planejamento no meio dela.
