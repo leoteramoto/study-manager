@@ -1,0 +1,87 @@
+# Verificação em todo push e pull request; deploy no GitHub Pages a partir da main.
+#
+# O deploy só roda quando a variável do repositório DEPLOY_PAGES vale "true"
+# (Settings → Secrets and variables → Actions → Variables) e o Pages está
+# configurado com Source = "GitHub Actions". Sem isso, nada é publicado.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Na main não cancela, para não interromper um deploy em andamento.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  verificar:
+    name: Lint, testes e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint e checagem de tipos
+        run: npm run lint
+
+      - name: Formatação
+        run: npm run format:check
+
+      - name: Testes (com cobertura mínima de 90% em src/domain)
+        run: npm run test:coverage
+
+      - name: Auditoria de dependências (falha em alta ou crítica)
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+  deploy:
+    name: Deploy no GitHub Pages
+    needs: verificar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build com o caminho base do Pages
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - id: publicacao
+        uses: actions/deploy-pages@v5
