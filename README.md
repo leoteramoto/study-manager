@@ -10,14 +10,26 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 
 ## Situação
 
-| Fase | Conteúdo                                        | Situação  |
-| ---- | ----------------------------------------------- | --------- |
-| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
-| 2    | Cadastro de objetivos e matérias                | A fazer   |
-| 3    | Planejamento e tela Principal                   | A fazer   |
-| 4    | Cronômetro                                      | A fazer   |
-| 5    | Estatísticas e lançamentos manuais              | A fazer   |
-| 6    | Backup, configurações e acabamento              | A fazer   |
+| Fase | Conteúdo                                        | Situação   |
+| ---- | ----------------------------------------------- | ---------- |
+| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída  |
+| 2    | Cadastro de objetivos e matérias                | Em revisão |
+| 3    | Planejamento e tela Principal                   | A fazer    |
+| 4    | Cronômetro                                      | A fazer    |
+| 5    | Estatísticas e lançamentos manuais              | A fazer    |
+| 6    | Backup, configurações e acabamento              | A fazer    |
+
+## Como usar
+
+### Cadastro
+
+Em **Cadastro**, crie seus **objetivos** (ex.: "Polícia Federal", sigla `PF`) e, dentro de cada um, as **matérias**.
+
+- A **sigla** do objetivo tem até 10 letras (A–Z) ou números, é única e não pode ser alterada depois.
+- Cada matéria recebe um **código** no formato `Matéria-SIGLA` (ex.: `Matemática-PF`). O código é único: não dá para ter duas matérias com o mesmo código, mesmo com maiúsculas diferentes. Ao renomear a matéria, o código muda junto, inclusive no histórico.
+- O objetivo de uma matéria não pode ser trocado. Para usar a mesma matéria em outro objetivo, crie uma matéria nova nele.
+- Nada é excluído: objetivos e matérias são **arquivados**. Arquivar um objetivo arquiva as matérias dele, e matérias arquivadas saem do planejamento. Para vê-los, ative **Mostrar arquivados**. Desarquivar um objetivo traz as matérias de volta; uma matéria só pode ser desarquivada se o objetivo dela estiver ativo.
+- A ordem é ajustada com as setas de subir e descer.
 
 ## Requisitos
 

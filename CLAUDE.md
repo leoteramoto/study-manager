@@ -61,5 +61,14 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - **Deploy travado pela variável `DEPLOY_PAGES`**: o job de deploy do `ci.yml` só roda na `main` quando a variável do repositório `DEPLOY_PAGES` vale `true`.
 - **Persistência pedida sem bloquear a abertura**: `navigator.storage.persist()` é chamado só na primeira execução e **não é aguardado**. No Firefox ele abre um aviso de permissão e a promessa só termina quando o usuário responde, o que deixava o app em tela branca.
 
+## Decisões da Fase 2 (casos não cobertos pela especificação, confirmados pelo usuário)
+- **Desarquivamento simétrico:** desarquivar o objetivo desarquiva todas as matérias dele. Desarquivar uma matéria com o objetivo arquivado é bloqueado ("Desarquive o objetivo primeiro"). A matéria desarquivada **não** volta ao planejamento.
+- **Não se cria matéria em objetivo arquivado** (consequência da regra acima).
+- **Nome normalizado ao salvar:** trim e espaços internos repetidos reduzidos a um (`normalizarNome`). Comparação de sigla/código: NFC + minúsculas `pt-BR`; acentos contam.
+- **Unicidade de sigla e código inclui arquivados.** O índice `&codigo` do Dexie diferencia maiúsculas; a regra sem diferenciar fica em `domain/codigo.ts` e é revalidada dentro da transação.
+- **Cor:** paleta de 12 cores (`PALETA_MATERIAS`, rodízio pela quantidade de matérias) mais `<input type="color">`.
+- **Confirmação só ao arquivar objetivo**; matéria é arquivada direto.
+- **Subir/descer troca com o vizinho da lista visível** (com arquivados ocultos, eles são ignorados).
+
 ### Pendências
 - **Fase 4:** trocar o `registerType: 'autoUpdate'` do PWA (em `vite.config.ts`) por um aviso de nova versão (`prompt`), para não recarregar a página com o cronômetro rodando.
