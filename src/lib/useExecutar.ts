@@ -3,7 +3,7 @@ import { mensagemDeErro } from '@/db/erros'
 
 export type Executar = (acao: () => Promise<unknown>) => Promise<boolean>
 
-/** Executa ações do cadastro e guarda a mensagem amigável do último erro. */
+/** Executa ações que gravam no banco e guarda a mensagem amigável do último erro. */
 export function useExecutar() {
   const [erro, setErro] = useState<string | null>(null)
 

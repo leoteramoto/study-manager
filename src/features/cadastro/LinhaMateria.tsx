@@ -6,7 +6,7 @@ import { arquivarMateria, desarquivarMateria, moverMateria } from '@/db/materias
 import type { Materia, Objetivo } from '@/db/tipos'
 import { BotoesOrdem } from './BotoesOrdem'
 import { DialogoMateria } from './DialogoMateria'
-import type { Executar } from './useExecutar'
+import type { Executar } from '@/lib/useExecutar'
 
 interface Props {
   materia: Materia

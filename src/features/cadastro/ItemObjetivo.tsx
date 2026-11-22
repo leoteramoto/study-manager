@@ -18,7 +18,7 @@ import { ConfirmarArquivamento } from './ConfirmarArquivamento'
 import { DialogoMateria } from './DialogoMateria'
 import { DialogoObjetivo } from './DialogoObjetivo'
 import { TabelaMaterias } from './TabelaMaterias'
-import type { Executar } from './useExecutar'
+import type { Executar } from '@/lib/useExecutar'
 
 interface Props {
   objetivo: Objetivo

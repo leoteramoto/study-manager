@@ -1,6 +1,6 @@
 import type { Materia, Objetivo } from '@/db/tipos'
 import { LinhaMateria } from './LinhaMateria'
-import type { Executar } from './useExecutar'
+import type { Executar } from '@/lib/useExecutar'
 
 interface Props {
   objetivo: Objetivo

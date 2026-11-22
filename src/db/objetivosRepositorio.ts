@@ -1,5 +1,5 @@
 import { db } from './banco'
-import { ErroCadastro, validarOuFalhar } from './erros'
+import { ErroNegocio, validarOuFalhar } from './erros'
 import type { Objetivo } from './tipos'
 import {
   calcularTroca,
@@ -17,7 +17,7 @@ export async function listarObjetivos(): Promise<Objetivo[]> {
 
 async function obterObjetivo(id: string): Promise<Objetivo> {
   const objetivo = await db.objetivos.get(id)
-  if (!objetivo) throw new ErroCadastro('Objetivo não encontrado.')
+  if (!objetivo) throw new ErroNegocio('Objetivo não encontrado.')
   return objetivo
 }
 
@@ -27,7 +27,7 @@ export async function criarObjetivo(dados: DadosObjetivo): Promise<Objetivo> {
   return db.transaction('rw', db.objetivos, async () => {
     const todos = await db.objetivos.toArray()
     if (siglaEmUso(todos, sigla)) {
-      throw new ErroCadastro(`Já existe um objetivo com a sigla ${sigla}.`)
+      throw new ErroNegocio(`Já existe um objetivo com a sigla ${sigla}.`)
     }
     const agora = new Date().toISOString()
     const objetivo: Objetivo = {
@@ -87,7 +87,7 @@ export async function arquivarObjetivo(id: string): Promise<void> {
       const materias = await db.materias.where('objetivoId').equals(id).toArray()
       const sessao = await db.sessaoAtiva.get('atual')
       if (sessao && materias.some((m) => m.id === sessao.materiaId)) {
-        throw new ErroCadastro(
+        throw new ErroNegocio(
           'Não é possível arquivar este objetivo: uma das matérias está na sessão ativa do cronômetro.',
         )
       }

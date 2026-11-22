@@ -9,10 +9,10 @@ import { Switch } from '@/components/ui/switch'
 import { listarMaterias } from '@/db/materiasRepositorio'
 import { listarObjetivos } from '@/db/objetivosRepositorio'
 import { corPadrao, ordenarPorOrdem } from '@/domain/cadastro'
-import { AvisoErro } from './AvisoErro'
+import { AvisoErro } from '@/components/AvisoErro'
 import { DialogoObjetivo } from './DialogoObjetivo'
 import { ItemObjetivo } from './ItemObjetivo'
-import { useExecutar } from './useExecutar'
+import { useExecutar } from '@/lib/useExecutar'
 
 export function PaginaCadastro() {
   const idArquivados = useId()

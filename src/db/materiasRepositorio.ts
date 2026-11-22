@@ -1,6 +1,6 @@
 import Dexie from 'dexie'
 import { db } from './banco'
-import { ErroCadastro, validarOuFalhar } from './erros'
+import { ErroNegocio, validarOuFalhar } from './erros'
 import type { Materia, Objetivo } from './tipos'
 import {
   calcularTroca,
@@ -30,18 +30,18 @@ export async function listarMateriasDisponiveis(): Promise<Materia[]> {
 
 async function obterMateria(id: string): Promise<Materia> {
   const materia = await db.materias.get(id)
-  if (!materia) throw new ErroCadastro('Matéria não encontrada.')
+  if (!materia) throw new ErroNegocio('Matéria não encontrada.')
   return materia
 }
 
 async function obterObjetivo(id: string): Promise<Objetivo> {
   const objetivo = await db.objetivos.get(id)
-  if (!objetivo) throw new ErroCadastro('Objetivo não encontrado.')
+  if (!objetivo) throw new ErroNegocio('Objetivo não encontrado.')
   return objetivo
 }
 
-function erroCodigoDuplicado(codigo: string): ErroCadastro {
-  return new ErroCadastro(`Já existe uma matéria com o código ${codigo}.`)
+function erroCodigoDuplicado(codigo: string): ErroNegocio {
+  return new ErroNegocio(`Já existe uma matéria com o código ${codigo}.`)
 }
 
 /** Converte a violação do índice único `&codigo` na mensagem de duplicidade. */
@@ -60,7 +60,7 @@ export async function criarMateria(objetivoId: string, dados: DadosMateria): Pro
   return db.transaction('rw', [db.objetivos, db.materias], async () => {
     const objetivo = await obterObjetivo(objetivoId)
     if (!objetivo.ativo) {
-      throw new ErroCadastro('Não é possível criar matérias em um objetivo arquivado.')
+      throw new ErroNegocio('Não é possível criar matérias em um objetivo arquivado.')
     }
     const todas = await db.materias.toArray()
     const codigo = gerarCodigo(nome, objetivo.sigla)
@@ -134,7 +134,7 @@ export async function arquivarMateria(id: string): Promise<void> {
     await obterMateria(id)
     const sessao = await db.sessaoAtiva.get('atual')
     if (sessao?.materiaId === id) {
-      throw new ErroCadastro(
+      throw new ErroNegocio(
         'Não é possível arquivar esta matéria: ela está na sessão ativa do cronômetro.',
       )
     }
@@ -149,7 +149,7 @@ export async function desarquivarMateria(id: string): Promise<void> {
     const materia = await obterMateria(id)
     const objetivo = await obterObjetivo(materia.objetivoId)
     if (!objetivo.ativo) {
-      throw new ErroCadastro(
+      throw new ErroNegocio(
         `O objetivo ${objetivo.nome} está arquivado. Desarquive o objetivo primeiro.`,
       )
     }
