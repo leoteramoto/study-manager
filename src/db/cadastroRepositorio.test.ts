@@ -47,6 +47,7 @@ function sessaoCom(materiaId: string): SessaoAtiva {
     tipoEncerramento: null,
     fimEm: null,
     motivoPausaAutomatica: null,
+    pausaDetectadaEm: null,
   }
 }
 

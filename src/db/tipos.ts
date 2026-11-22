@@ -55,22 +55,12 @@ export interface Registro {
   atualizadoEm: string
 }
 
-export type EstadoSessao = 'em_andamento' | 'pausado' | 'aguardando_confirmacao'
-export type MotivoPausaAutomatica = 'suspensao' | 'recuperacao'
-
-export interface SessaoAtiva {
-  id: 'atual'
-  materiaId: string
-  duracaoPlanejadaMin: number
-  inicioEm: string
-  segmentoInicioEm: string | null
-  acumuladoSeg: number
-  ultimoHeartbeatEm: string
-  estado: EstadoSessao
-  tipoEncerramento: Exclude<TipoEncerramento, 'manual'> | null
-  fimEm: string | null
-  motivoPausaAutomatica: MotivoPausaAutomatica | null
-}
+// A sessão ativa do cronômetro é o estado da máquina de estados do domínio.
+export type {
+  EstadoSessao,
+  MotivoPausaAutomatica,
+  Sessao as SessaoAtiva,
+} from '@/domain/cronometro'
 
 export interface Configuracoes {
   id: 'app'
