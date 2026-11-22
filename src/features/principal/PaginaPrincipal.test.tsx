@@ -69,8 +69,41 @@ describe('PaginaPrincipal', () => {
     render(<PaginaPrincipal />)
     expect(await screen.findByText('Defina a meta mensal')).toBeInTheDocument()
     expect(screen.getByText(/Nenhuma matéria no planejamento/)).toBeInTheDocument()
+    const painel = screen.getByRole('region', { name: 'Indicadores do mês' })
+    expect(painel).toHaveTextContent('Tempo restante—')
+    expect(painel).toHaveTextContent('% concluída—')
+  })
+
+  it('com meta e planejamento vazio calcula % e restante com todo o tempo do mês', async () => {
+    const { mat } = await cenario()
     await definirMetaMensal(100)
+    await db.registros.add(registro(mat, hojeEmBrasilia(), 3 * H))
+    render(<PaginaPrincipal />)
+
     expect(await screen.findByText('Adicione matérias ao planejamento')).toBeInTheDocument()
+    const painel = screen.getByRole('region', { name: 'Indicadores do mês' })
+    await waitFor(() => {
+      expect(painel).toHaveTextContent('% concluída3%')
+    })
+    expect(painel).toHaveTextContent('Tempo restante97h00')
+  })
+
+  it('99,6% da meta aparece como 99% na tabela e no painel', async () => {
+    const { mat } = await cenario()
+    await definirPlanejamento([mat.id])
+    await definirMetaMensal(10)
+    // 99,6% de 10 h = 9h57m36s.
+    await db.registros.add(registro(mat, hojeEmBrasilia(), 0.996 * 10 * H))
+    render(<PaginaPrincipal />)
+
+    await screen.findByText('Matemática-PF')
+    await waitFor(() => {
+      expect(celulas('Matemática-PF')[0]).toBe('99%')
+    })
+    expect(celulas('Matemática-PF')[6]).toBe('0h03')
+    expect(screen.getByRole('region', { name: 'Indicadores do mês' })).toHaveTextContent(
+      '% concluída99%',
+    )
   })
 
   it('RF03: pesos 2, 1 e 1 com 100 h e recálculo para 80 h sem recarregar', async () => {

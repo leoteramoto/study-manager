@@ -119,9 +119,28 @@ describe('meta, percentual e restante', () => {
     const percentual = calcularPercentual(30 * H, 20 * H)
     expect(percentual).toBe(150)
     expect(calcularPercentual(1, 3)).toBeCloseTo(33.3333333, 6)
-    expect(arredondarPercentual(49.5)).toBe(50)
-    expect(arredondarPercentual(49.49)).toBe(49)
+    expect(arredondarPercentual(49.5, false)).toBe(50)
+    expect(arredondarPercentual(49.49, false)).toBe(49)
     expect(calcularPercentual(10, 0)).toBeNull()
+  })
+
+  it('nunca mostra 100% enquanto a meta não estiver atingida', () => {
+    expect(arredondarPercentual(99.6, false)).toBe(99)
+    expect(arredondarPercentual(99.5, false)).toBe(99)
+    expect(arredondarPercentual(99.4, false)).toBe(99)
+    expect(arredondarPercentual(100, true)).toBe(100)
+    expect(arredondarPercentual(150.4, true)).toBe(150)
+    // Ruído de ponto flutuante com a meta atingida continua mostrando 100%.
+    expect(arredondarPercentual(99.99999999999, true)).toBe(100)
+  })
+
+  it('99,6% estudado mostra 99% e a meta não está atingida', () => {
+    const metaSeg = 1000 * 60
+    const estudadoSeg = 996 * 60
+    const restante = calcularRestante(metaSeg, estudadoSeg)
+    const percentual = calcularPercentual(estudadoSeg, metaSeg) ?? 0
+    expect(restante.atingida).toBe(false)
+    expect(arredondarPercentual(percentual, restante.atingida)).toBe(99)
   })
 
   it('restante negativo vira zero com "meta atingida" (RN11)', () => {
@@ -261,12 +280,14 @@ describe('calcularPainel', () => {
     })
   })
 
-  it('sem matérias no planejamento pede para adicioná-las (RN13)', () => {
+  it('sem matérias no planejamento avisa, mas calcula % e restante com todo o tempo do mês', () => {
     const painel = calcularPainel(100, 3 * H, 0)
     expect(painel).toMatchObject({
       metaSeg: 100 * H,
-      percentual: null,
-      restanteSeg: null,
+      estudadoSeg: 3 * H,
+      percentual: 3,
+      restanteSeg: 97 * H,
+      atingida: false,
       aviso: 'adicione_materias',
     })
   })

@@ -16,7 +16,9 @@ export function LinhaPlanejamento({ linha, onSalvarPeso, onRemover }: Props) {
   return (
     <tr className="border-b last:border-0" data-atingida={linha.atingida || undefined}>
       <td className="px-3 py-2 font-medium tabular-nums">
-        {linha.percentual === null ? '—' : `${arredondarPercentual(linha.percentual)}%`}
+        {linha.percentual === null
+          ? '—'
+          : `${arredondarPercentual(linha.percentual, linha.atingida)}%`}
       </td>
       <td className="px-3 py-2">
         <CampoDecimal

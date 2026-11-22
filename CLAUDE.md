@@ -74,7 +74,8 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - **Fase 4:** trocar o `registerType: 'autoUpdate'` do PWA (em `vite.config.ts`) por um aviso de nova versão (`prompt`), para não recarregar a página com o cronômetro rodando.
 
 ## Decisões da Fase 3 (casos não cobertos pela especificação, confirmados pelo usuário)
-- **% geral e tempo restante do painel** usam **todo** o tempo do mês (inclui matérias fora do planejamento e lançamentos manuais) ÷ meta mensal.
+- **% geral e tempo restante do painel** usam **todo** o tempo do mês (inclui matérias fora do planejamento e lançamentos manuais) ÷ meta mensal. Com meta definida e **planejamento vazio**, % e restante **são calculados** assim mesmo, e o aviso "Adicione matérias ao planejamento" continua. Só sem meta eles mostram "—".
+- **% nunca mostra 100% sem a meta atingida:** o arredondamento padrão vale, mas se ele der 100% ou mais com a meta não atingida, a tela mostra 99% (99,6% → 99%). Vale para o painel e para a tabela.
 - **Números decimais:** `interpretarNumeroBr` aceita **vírgula e ponto** como separador decimal (não há separador de milhar nesses campos: peso ≤ 100, meta ≤ 744). "1,5" → 1.5; "1.5" → 1.5.
 - **Peso com mais de uma casa** é **arredondado para 0,1** e gravado ("1,25" → 1,3). O arredondamento é imune a erro de ponto flutuante (1,15 → 1,2; 1,05 → 1,1; 2,25 → 2,3); nunca usar `Math.round(x * 10)` direto.
 - **Meta mensal não pode ser apagada:** campo vazio ou inválido volta ao último valor válido. Ela só fica vazia antes da primeira definição.

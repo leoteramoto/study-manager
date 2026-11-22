@@ -68,7 +68,9 @@ export function PainelIndicadores({ hoje, painel, metaMensalHoras, onSalvarMeta 
           )}
         </Indicador>
         <Indicador titulo="% concluída">
-          {painel.percentual === null ? '—' : `${arredondarPercentual(painel.percentual)}%`}
+          {painel.percentual === null
+            ? '—'
+            : `${arredondarPercentual(painel.percentual, painel.atingida)}%`}
         </Indicador>
         <Indicador titulo="Matérias no planejamento">{painel.quantidadeMaterias}</Indicador>
       </div>

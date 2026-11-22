@@ -128,9 +128,13 @@ export function calcularPercentual(estudadoSeg: number, metaSeg: number): number
   return (estudadoSeg / metaSeg) * 100
 }
 
-/** % para exibição: sem casas decimais, arredondamento padrão (RN10). */
-export function arredondarPercentual(percentual: number): number {
-  return arredondarSemRuido(percentual)
+/**
+ * % para exibição: sem casas decimais, arredondamento padrão (RN10). Nunca
+ * mostra 100% (ou mais) enquanto a meta não estiver atingida: 99,6% vira 99%.
+ */
+export function arredondarPercentual(percentual: number, atingida: boolean): number {
+  const arredondado = arredondarSemRuido(percentual)
+  return !atingida && arredondado >= 100 ? 99 : arredondado
 }
 
 export interface Restante {
@@ -226,8 +230,9 @@ export interface Painel {
 
 /**
  * Indicadores do painel (RF04). O tempo estudado é **todo** o tempo do mês,
- * inclusive de matérias fora do planejamento. Sem meta ou sem matérias no
- * planejamento, % e restante ficam vazios (RN13).
+ * inclusive de matérias fora do planejamento. Sem meta, % e restante ficam
+ * vazios (RN13). Com meta e planejamento vazio, % e restante são calculados
+ * normalmente e o aviso "Adicione matérias ao planejamento" continua.
  */
 export function calcularPainel(
   metaMensalHoras: number | null,
@@ -237,13 +242,13 @@ export function calcularPainel(
   const metaSeg = metaMensalHoras === null ? null : metaMensalHoras * 3600
   const aviso =
     metaSeg === null ? 'defina_meta' : quantidadeMaterias === 0 ? 'adicione_materias' : null
-  const restante = metaSeg !== null && aviso === null ? calcularRestante(metaSeg, totalSeg) : null
+  const restante = metaSeg === null ? null : calcularRestante(metaSeg, totalSeg)
   return {
     metaSeg,
     estudadoSeg: totalSeg,
     restanteSeg: restante?.restanteSeg ?? null,
     atingida: restante?.atingida ?? false,
-    percentual: metaSeg !== null && aviso === null ? calcularPercentual(totalSeg, metaSeg) : null,
+    percentual: metaSeg === null ? null : calcularPercentual(totalSeg, metaSeg),
     quantidadeMaterias,
     aviso,
   }
