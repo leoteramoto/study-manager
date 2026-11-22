@@ -1,5 +1,7 @@
 import { db, SCHEMA_VERSION } from './banco'
+import { validarOuFalhar } from './erros'
 import type { Configuracoes } from './tipos'
+import { esquemaMetaMensal } from '@/domain/calculos'
 import { detectarFusoNavegador } from '@/lib/fuso'
 import { SOM_PADRAO } from '@/lib/sons'
 
@@ -35,4 +37,13 @@ export async function garantirConfiguracoesPadrao(): Promise<boolean> {
 
 export async function obterConfiguracoes(): Promise<Configuracoes | undefined> {
   return db.configuracoes.get(ID_CONFIGURACOES)
+}
+
+/**
+ * Grava a meta mensal em horas (RN08). Não aceita apagar a meta: só valores
+ * de 0,5 a 744. Não altera nenhum tempo já estudado.
+ */
+export async function definirMetaMensal(horas: number): Promise<void> {
+  const meta = validarOuFalhar(esquemaMetaMensal, horas)
+  await db.configuracoes.update(ID_CONFIGURACOES, { metaMensalHoras: meta })
 }
