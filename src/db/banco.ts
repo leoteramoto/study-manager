@@ -20,15 +20,23 @@ export type BancoStudyManager = Dexie & {
   configuracoes: EntityTable<Configuracoes, 'id'>
 }
 
-export const db = new Dexie(NOME_BANCO) as BancoStudyManager
+/**
+ * Cria uma conexão com o banco. O app usa uma só (`db`); os testes abrem uma
+ * segunda para simular outra aba.
+ */
+export function criarBanco(nome = NOME_BANCO): BancoStudyManager {
+  const banco = new Dexie(nome) as BancoStudyManager
+  // Versão 1 do schema. Novas versões devem ser adicionadas abaixo com
+  // banco.version(n).stores(...).upgrade(...), sem alterar esta.
+  banco.version(1).stores({
+    objetivos: 'id, &sigla, ordem',
+    materias: 'id, &codigo, objetivoId, [objetivoId+ordem]',
+    planejamento: 'materiaId',
+    registros: 'id, data, materiaId, [materiaId+data]',
+    sessaoAtiva: 'id',
+    configuracoes: 'id',
+  })
+  return banco
+}
 
-// Versão 1 do schema. Novas versões devem ser adicionadas abaixo com
-// db.version(n).stores(...).upgrade(...), sem alterar esta.
-db.version(1).stores({
-  objetivos: 'id, &sigla, ordem',
-  materias: 'id, &codigo, objetivoId, [objetivoId+ordem]',
-  planejamento: 'materiaId',
-  registros: 'id, data, materiaId, [materiaId+data]',
-  sessaoAtiva: 'id',
-  configuracoes: 'id',
-})
+export const db = criarBanco()
