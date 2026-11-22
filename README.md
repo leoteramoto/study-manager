@@ -10,14 +10,14 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 
 ## Situação
 
-| Fase | Conteúdo                                        | Situação   |
-| ---- | ----------------------------------------------- | ---------- |
-| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída  |
-| 2    | Cadastro de objetivos e matérias                | Em revisão |
-| 3    | Planejamento e tela Principal                   | A fazer    |
-| 4    | Cronômetro                                      | A fazer    |
-| 5    | Estatísticas e lançamentos manuais              | A fazer    |
-| 6    | Backup, configurações e acabamento              | A fazer    |
+| Fase | Conteúdo                                        | Situação  |
+| ---- | ----------------------------------------------- | --------- |
+| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
+| 2    | Cadastro de objetivos e matérias                | Concluída |
+| 3    | Planejamento e tela Principal                   | A fazer   |
+| 4    | Cronômetro                                      | A fazer   |
+| 5    | Estatísticas e lançamentos manuais              | A fazer   |
+| 6    | Backup, configurações e acabamento              | A fazer   |
 
 ## Como usar
 

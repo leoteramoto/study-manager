@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const PORTA = 4173
+// Porta própria dos testes, para nunca reaproveitar um `vite preview` aberto à mão
+// (que pode estar servindo um build antigo).
+const PORTA = 4180
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -19,7 +21,7 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npx vite preview --port ${PORTA} --strictPort`,
     url: `http://localhost:${PORTA}/`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })
