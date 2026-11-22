@@ -20,6 +20,8 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run build && npx vite preview --port ${PORTA} --strictPort`,
+    // Ticks do cronômetro na thread principal, para o page.clock controlar o tempo.
+    env: { VITE_FONTE_TICKS: 'principal' },
     url: `http://localhost:${PORTA}/`,
     reuseExistingServer: false,
     timeout: 120_000,
