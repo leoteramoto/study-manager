@@ -23,6 +23,7 @@ import { dataNoFuso, intervaloDoMes, mesNoFuso } from '@/domain/tempo'
 import { FUSO_PADRAO } from '@/lib/fuso'
 import { useAgora } from '@/lib/useAgora'
 import { useExecutar } from '@/lib/useExecutar'
+import { CardCronometro } from '@/features/cronometro/CardCronometro'
 import { DialogoPlanejamento } from './DialogoPlanejamento'
 import { PainelIndicadores } from './PainelIndicadores'
 import { TabelaPlanejamento } from './TabelaPlanejamento'
@@ -99,6 +100,8 @@ export function PaginaPrincipal() {
               void executar(() => definirMetaMensal(horas))
             }}
           />
+
+          <CardCronometro materias={linhas} />
 
           <Card>
             <CardHeader className="flex flex-wrap items-center justify-between gap-2">

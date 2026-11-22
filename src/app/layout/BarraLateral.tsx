@@ -1,3 +1,4 @@
+import { IndicadorSessao } from '@/features/cronometro/IndicadorSessao'
 import { ListaNavegacao } from './ListaNavegacao'
 import { Marca } from './Marca'
 
@@ -9,7 +10,7 @@ export function BarraLateral() {
         <Marca />
       </div>
       <ListaNavegacao />
-      {/* Fase 4: indicador da sessão ativa do cronômetro (RF06). */}
+      <IndicadorSessao />
     </aside>
   )
 }

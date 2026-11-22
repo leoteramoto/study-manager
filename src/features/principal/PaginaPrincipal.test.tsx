@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '@/db/banco'
@@ -7,6 +7,7 @@ import { criarMateria } from '@/db/materiasRepositorio'
 import { criarObjetivo } from '@/db/objetivosRepositorio'
 import { alterarPeso, definirPlanejamento } from '@/db/planejamentoRepositorio'
 import type { Materia, Registro } from '@/db/tipos'
+import { renderizarComCronometro } from '@/test/comCronometro'
 import { PaginaPrincipal } from './PaginaPrincipal'
 
 const H = 3600
@@ -52,8 +53,22 @@ async function cenario() {
   return { pf, cf, mat, dir, port }
 }
 
+/** Busca o código só na tabela (o select do cronômetro também lista os códigos). */
+function getByTextNaTabela(texto: string): HTMLElement {
+  return within(screen.getByRole('table')).getByText(texto)
+}
+
+function queryByTextNaTabela(texto: string): HTMLElement | null {
+  const tabela = screen.queryByRole('table')
+  return tabela ? within(tabela).queryByText(texto) : null
+}
+
+async function findByTextNaTabela(texto: string): Promise<HTMLElement> {
+  return within(await screen.findByRole('table')).findByText(texto)
+}
+
 function linhaDe(codigo: string): HTMLElement {
-  const linha = screen.getByText(codigo).closest('tr')
+  const linha = within(screen.getByRole('table')).getByText(codigo).closest('tr')
   if (!linha) throw new Error(`Linha de ${codigo} não encontrada`)
   return linha
 }
@@ -66,7 +81,7 @@ function celulas(codigo: string): string[] {
 
 describe('PaginaPrincipal', () => {
   it('sem meta e sem planejamento mostra os avisos e "—" (RN13)', async () => {
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
     expect(await screen.findByText('Defina a meta mensal')).toBeInTheDocument()
     expect(screen.getByText(/Nenhuma matéria no planejamento/)).toBeInTheDocument()
     const painel = screen.getByRole('region', { name: 'Indicadores do mês' })
@@ -78,7 +93,7 @@ describe('PaginaPrincipal', () => {
     const { mat } = await cenario()
     await definirMetaMensal(100)
     await db.registros.add(registro(mat, hojeEmBrasilia(), 3 * H))
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
     expect(await screen.findByText('Adicione matérias ao planejamento')).toBeInTheDocument()
     const painel = screen.getByRole('region', { name: 'Indicadores do mês' })
@@ -94,9 +109,9 @@ describe('PaginaPrincipal', () => {
     await definirMetaMensal(10)
     // 99,6% de 10 h = 9h57m36s.
     await db.registros.add(registro(mat, hojeEmBrasilia(), 0.996 * 10 * H))
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
-    await screen.findByText('Matemática-PF')
+    await findByTextNaTabela('Matemática-PF')
     await waitFor(() => {
       expect(celulas('Matemática-PF')[0]).toBe('99%')
     })
@@ -112,9 +127,9 @@ describe('PaginaPrincipal', () => {
     await alterarPeso(mat.id, 2)
     await definirMetaMensal(100)
     const usuario = userEvent.setup()
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
-    await screen.findByText('Matemática-PF')
+    await findByTextNaTabela('Matemática-PF')
     expect(celulas('Matemática-PF')[5]).toBe('50h00')
     expect(celulas('Direito-PF')[5]).toBe('25h00')
     expect(celulas('Português-CF')[5]).toBe('25h00')
@@ -135,9 +150,9 @@ describe('PaginaPrincipal', () => {
     await definirPlanejamento([mat.id])
     await definirMetaMensal(20)
     await db.registros.add(registro(mat, hojeEmBrasilia(), 30 * H))
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
-    await screen.findByText('Matemática-PF')
+    await findByTextNaTabela('Matemática-PF')
     await waitFor(() => {
       expect(celulas('Matemática-PF')[0]).toBe('150%')
     })
@@ -155,9 +170,9 @@ describe('PaginaPrincipal', () => {
     )
     if (!contab) throw new Error('sem contabilidade')
     await db.registros.add(registro(contab, hojeEmBrasilia(), 2 * H))
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
-    await screen.findByText('Matemática-PF')
+    await findByTextNaTabela('Matemática-PF')
     const codigos = screen
       .getAllByRole('row')
       .slice(1)
@@ -174,7 +189,7 @@ describe('PaginaPrincipal', () => {
     const { mat } = await cenario()
     await definirPlanejamento([mat.id])
     const usuario = userEvent.setup()
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
     const peso = await screen.findByLabelText('Peso de Matemática-PF')
     await usuario.clear(peso)
@@ -201,7 +216,7 @@ describe('PaginaPrincipal', () => {
   it('meta mensal vazia volta ao último valor válido', async () => {
     await definirMetaMensal(100)
     const usuario = userEvent.setup()
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
     const meta = await screen.findByLabelText('Meta mensal (horas)')
     expect(meta).toHaveValue('100')
     await usuario.clear(meta)
@@ -216,7 +231,7 @@ describe('PaginaPrincipal', () => {
   it('edita o planejamento pelo dialog e remove pela linha', async () => {
     await cenario()
     const usuario = userEvent.setup()
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
     await usuario.click(await screen.findByRole('button', { name: 'Editar planejamento' }))
     const dialogo = await screen.findByRole('dialog', { name: 'Editar planejamento' })
@@ -228,14 +243,14 @@ describe('PaginaPrincipal', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
-    expect(await screen.findByText('Português-CF')).toBeInTheDocument()
-    expect(screen.getByText('Matemática-PF')).toBeInTheDocument()
+    expect(await findByTextNaTabela('Português-CF')).toBeInTheDocument()
+    expect(getByTextNaTabela('Matemática-PF')).toBeInTheDocument()
 
     await usuario.click(
       screen.getByRole('button', { name: 'Remover Português-CF do planejamento' }),
     )
     await waitFor(() => {
-      expect(screen.queryByText('Português-CF')).not.toBeInTheDocument()
+      expect(queryByTextNaTabela('Português-CF')).not.toBeInTheDocument()
     })
   })
 
@@ -252,9 +267,9 @@ describe('PaginaPrincipal', () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
     // 30/11 23:59 em Rio Branco (UTC−5).
     vi.setSystemTime(new Date('2026-12-01T04:59:00Z'))
-    render(<PaginaPrincipal />)
+    renderizarComCronometro(<PaginaPrincipal />)
 
-    await screen.findByText('Matemática-PF')
+    await findByTextNaTabela('Matemática-PF')
     await waitFor(() => {
       expect(celulas('Matemática-PF')[4]).toBe('300')
     })
