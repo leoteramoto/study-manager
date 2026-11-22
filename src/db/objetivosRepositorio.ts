@@ -15,6 +15,11 @@ export async function listarObjetivos(): Promise<Objetivo[]> {
   return db.objetivos.orderBy('ordem').toArray()
 }
 
+/** Objetivo pelo id (inclusive arquivado), ou `undefined`. */
+export async function buscarObjetivo(id: string): Promise<Objetivo | undefined> {
+  return db.objetivos.get(id)
+}
+
 async function obterObjetivo(id: string): Promise<Objetivo> {
   const objetivo = await db.objetivos.get(id)
   if (!objetivo) throw new ErroNegocio('Objetivo não encontrado.')

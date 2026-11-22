@@ -28,6 +28,11 @@ export async function listarMateriasDisponiveis(): Promise<Materia[]> {
   )
 }
 
+/** Matéria pelo id (inclusive arquivada), ou `undefined`. */
+export async function buscarMateria(id: string): Promise<Materia | undefined> {
+  return db.materias.get(id)
+}
+
 async function obterMateria(id: string): Promise<Materia> {
   const materia = await db.materias.get(id)
   if (!materia) throw new ErroNegocio('Matéria não encontrada.')

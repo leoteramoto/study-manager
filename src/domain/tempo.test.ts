@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   arredondarSemRuido,
   dataNoFuso,
+  formatarDataCurta,
   formatarDataLonga,
+  formatarDuracaoCurta,
+  formatarHoraNoFuso,
   formatarHoras,
   formatarHorasParaCima,
   formatarMinutos,
@@ -122,5 +125,25 @@ describe('arredondarSemRuido', () => {
     expect(arredondarSemRuido(1.15 * 10)).toBe(12)
     expect(arredondarSemRuido(49.5)).toBe(50)
     expect(arredondarSemRuido(49.4)).toBe(49)
+  })
+})
+
+describe('formatarHoraNoFuso, formatarDataCurta e formatarDuracaoCurta', () => {
+  it('mostra a hora no fuso configurado', () => {
+    expect(formatarHoraNoFuso('2026-11-22T13:05:00.000Z', 'America/Sao_Paulo')).toBe('10:05')
+    expect(formatarHoraNoFuso('2026-11-22T13:05:00.000Z', 'America/Rio_Branco')).toBe('08:05')
+    expect(formatarHoraNoFuso('2026-11-23T02:50:00.000Z', 'America/Sao_Paulo')).toBe('23:50')
+  })
+
+  it('formata a data curta', () => {
+    expect(formatarDataCurta('2026-11-02')).toBe('02/11/2026')
+  })
+
+  it('formata durações curtas', () => {
+    expect(formatarDuracaoCurta(0)).toBe('0 s')
+    expect(formatarDuracaoCurta(59.9)).toBe('59 s')
+    expect(formatarDuracaoCurta(60)).toBe('1 min')
+    expect(formatarDuracaoCurta(300.5)).toBe('5 min')
+    expect(formatarDuracaoCurta(-3)).toBe('0 s')
   })
 })

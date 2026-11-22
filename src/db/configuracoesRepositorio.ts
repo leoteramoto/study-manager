@@ -47,3 +47,8 @@ export async function definirMetaMensal(horas: number): Promise<void> {
   const meta = validarOuFalhar(esquemaMetaMensal, horas)
   await db.configuracoes.update(ID_CONFIGURACOES, { metaMensalHoras: meta })
 }
+
+/** Liga ou desliga as notificações do sistema (RN39). */
+export async function definirNotificacoesAtivas(ativas: boolean): Promise<void> {
+  await db.configuracoes.update(ID_CONFIGURACOES, { notificacoesAtivas: ativas })
+}

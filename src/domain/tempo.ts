@@ -87,3 +87,20 @@ export function formatarHorasParaCima(segundos: number): string {
 export function formatarMinutos(segundos: number): string {
   return formatoInteiro.format(minutosParaBaixo(Math.max(0, segundos)))
 }
+
+/** Hora `HH:mm` de um instante ISO, no fuso informado. */
+export function formatarHoraNoFuso(instanteIso: string, fuso: string): string {
+  return format(new TZDate(new Date(instanteIso), fuso), 'HH:mm')
+}
+
+/** `22/11/2026`, a partir de uma data `YYYY-MM-DD`. */
+export function formatarDataCurta(data: string): string {
+  const [ano = '', mes = '', dia = ''] = data.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+/** Duração curta para avisos: `40 s` abaixo de 1 minuto, senão `5 min` (para baixo). */
+export function formatarDuracaoCurta(segundos: number): string {
+  const inteiro = Math.floor(Number(Math.max(0, segundos).toPrecision(12)))
+  return inteiro < 60 ? `${inteiro} s` : `${formatarMinutos(inteiro)} min`
+}

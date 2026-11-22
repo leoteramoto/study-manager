@@ -20,3 +20,15 @@ if (typeof window.matchMedia !== 'function') {
     },
   })
 }
+
+// jsdom não implementa reprodução de mídia; os testes de alerta trocam por rejeição.
+Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+  configurable: true,
+  writable: true,
+  value: () => Promise.resolve(),
+})
+Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
+  configurable: true,
+  writable: true,
+  value: () => undefined,
+})
