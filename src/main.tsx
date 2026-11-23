@@ -6,6 +6,8 @@ import { registerSW } from 'virtual:pwa-register'
 import { App } from './app/App'
 import { sinalizarNovaVersao } from './app/pwa/novaVersao'
 import { inicializarBanco } from './db/inicializar'
+import { ouvirRestauracao } from './lib/canalRestauracao'
+import { recarregarPagina } from './lib/recarregar'
 import './index.css'
 
 // Nova versão não recarrega sozinha: o usuário escolhe quando, e nunca com
@@ -16,6 +18,9 @@ const atualizarServiceWorker = registerSW({
     sinalizarNovaVersao(() => atualizarServiceWorker(true))
   },
 })
+
+// Outra aba restaurou um backup: recarrega para não ficar com estado de tela antigo.
+ouvirRestauracao(recarregarPagina)
 
 const raiz = document.getElementById('root')
 if (!raiz) throw new Error('Elemento #root não encontrado')

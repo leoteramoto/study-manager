@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  formatarDataHoraNoFuso,
   anoDaData,
   arredondarSemRuido,
   dataValida,
@@ -169,5 +170,14 @@ describe('intervaloDoAno, anoDaData e dataValida', () => {
     expect(dataValida('0050-01-01')).toBe(true)
     expect(dataValida('2026-1-1')).toBe(false)
     expect(dataValida('')).toBe(false)
+  })
+})
+
+describe('formatarDataHoraNoFuso', () => {
+  it('formata data e hora no fuso informado', () => {
+    expect(formatarDataHoraNoFuso('2026-11-22T02:30:00.000Z', 'America/Sao_Paulo')).toBe(
+      '21/11/2026 às 23:30',
+    )
+    expect(formatarDataHoraNoFuso('2026-11-22T02:30:00.000Z', 'UTC')).toBe('22/11/2026 às 02:30')
   })
 })

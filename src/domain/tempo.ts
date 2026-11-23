@@ -121,6 +121,11 @@ export function formatarHoraNoFuso(instanteIso: string, fuso: string): string {
   return format(new TZDate(new Date(instanteIso), fuso), 'HH:mm')
 }
 
+/** `22/11/2026 às 12:00`, de um instante ISO, no fuso informado. */
+export function formatarDataHoraNoFuso(instanteIso: string, fuso: string): string {
+  return format(new TZDate(new Date(instanteIso), fuso), "dd/MM/yyyy 'às' HH:mm")
+}
+
 /** `22/11/2026`, a partir de uma data `YYYY-MM-DD`. */
 export function formatarDataCurta(data: string): string {
   const [ano = '', mes = '', dia = ''] = data.split('-')
