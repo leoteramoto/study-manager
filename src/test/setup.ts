@@ -32,3 +32,19 @@ Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
   writable: true,
   value: () => undefined,
 })
+
+// jsdom não implementa ResizeObserver, usado pelo Slider do Radix para medir o controle.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class ResizeObserverFalso {
+    observe() {
+      return undefined
+    }
+    unobserve() {
+      return undefined
+    }
+    disconnect() {
+      return undefined
+    }
+  }
+  globalThis.ResizeObserver = ResizeObserverFalso
+}

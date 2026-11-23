@@ -1,9 +1,10 @@
+import { z } from 'zod'
 import { db, SCHEMA_VERSION } from './banco'
-import { validarOuFalhar } from './erros'
+import { ErroNegocio, validarOuFalhar } from './erros'
 import type { Configuracoes } from './tipos'
 import { esquemaMetaMensal } from '@/domain/calculos'
-import { detectarFusoNavegador } from '@/lib/fuso'
-import { SOM_PADRAO } from '@/lib/sons'
+import { canonizarFuso, detectarFusoNavegador } from '@/lib/fuso'
+import { SOM_PADRAO, SONS } from '@/lib/sons'
 
 export const ID_CONFIGURACOES = 'app'
 
@@ -51,4 +52,34 @@ export async function definirMetaMensal(horas: number): Promise<void> {
 /** Liga ou desliga as notificações do sistema (RN39). */
 export async function definirNotificacoesAtivas(ativas: boolean): Promise<void> {
   await db.configuracoes.update(ID_CONFIGURACOES, { notificacoesAtivas: ativas })
+}
+
+/**
+ * Troca o fuso horário (RN37). Afeta a exibição e os registros novos; nenhum
+ * registro já gravado é alterado (a `data` deles continua a mesma).
+ */
+export async function definirFuso(fuso: string): Promise<string> {
+  const canonico = canonizarFuso(fuso)
+  if (!canonico) throw new ErroNegocio('Fuso horário desconhecido. Escolha um da lista.')
+  await db.configuracoes.update(ID_CONFIGURACOES, { fusoHorario: canonico })
+  return canonico
+}
+
+const esquemaSom = z
+  .object({
+    somAtivo: z.boolean(),
+    somId: z.enum(
+      SONS.map((som) => som.id),
+      { error: 'Som desconhecido.' },
+    ),
+    volume: z.number().min(0, 'Volume inválido.').max(1, 'Volume inválido.'),
+  })
+  .partial()
+
+export type PreferenciasSomParciais = z.input<typeof esquemaSom>
+
+/** Liga/desliga o som, escolhe o som e o volume (RN38). */
+export async function definirSom(preferencias: PreferenciasSomParciais): Promise<void> {
+  const dados = validarOuFalhar(esquemaSom, preferencias)
+  await db.configuracoes.update(ID_CONFIGURACOES, dados)
 }

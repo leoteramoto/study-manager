@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { detectarFusoNavegador, FUSO_PADRAO, fusoValido } from './fuso'
+import {
+  canonizarFuso,
+  detectarFusoNavegador,
+  FUSO_PADRAO,
+  FUSOS_BRASIL,
+  fusoDoBrasil,
+  fusoValido,
+  listarFusosIana,
+} from './fuso'
 
 describe('detectarFusoNavegador', () => {
   it('usa o fuso informado pelo navegador quando é válido', () => {
@@ -22,5 +30,28 @@ describe('detectarFusoNavegador', () => {
 
   it('usa o Intl do ambiente por padrão', () => {
     expect(fusoValido(detectarFusoNavegador())).toBe(true)
+  })
+})
+
+describe('canonizarFuso', () => {
+  it('devolve o nome canônico ou null', () => {
+    expect(canonizarFuso(' America/Manaus ')).toBe('America/Manaus')
+    expect(canonizarFuso('america/sao_paulo')).toBe('America/Sao_Paulo')
+    expect(canonizarFuso('Lua/Cratera')).toBeNull()
+    expect(canonizarFuso('')).toBeNull()
+  })
+})
+
+describe('FUSOS_BRASIL e listarFusosIana', () => {
+  it('lista os 4 fusos brasileiros e os fusos do navegador', () => {
+    expect(FUSOS_BRASIL.map((f) => f.id)).toEqual([
+      'America/Noronha',
+      'America/Sao_Paulo',
+      'America/Manaus',
+      'America/Rio_Branco',
+    ])
+    expect(fusoDoBrasil('America/Manaus')).toBe(true)
+    expect(fusoDoBrasil('Europe/Lisbon')).toBe(false)
+    expect(listarFusosIana()).toContain('Europe/Lisbon')
   })
 })
