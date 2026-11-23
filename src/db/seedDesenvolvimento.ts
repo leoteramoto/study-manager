@@ -86,6 +86,8 @@ export async function popularDadosDeTeste(agora = new Date()): Promise<void> {
     registro(portugues, hoje, 3 * H, 'manual'),
     registro(contabilidade, hoje, 2 * H, 'manual'),
     registro(matematica, hoje, 5 * H, 'cronometro', true),
-    registro(matematica, mesAnterior, 10 * H, 'cronometro'),
+    // Sessões do cronômetro têm no máximo 480 min (RN15): 10 h viram duas de 5 h.
+    registro(matematica, mesAnterior, 5 * H, 'cronometro'),
+    registro(matematica, mesAnterior, 5 * H, 'cronometro'),
   ])
 }
