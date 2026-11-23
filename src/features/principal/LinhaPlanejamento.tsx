@@ -1,5 +1,6 @@
 import { XIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { CodigoMateria } from '@/components/CodigoMateria'
 import { Button } from '@/components/ui/button'
 import type { LinhaPlanejamento as Linha } from '@/domain/calculos'
 import { arredondarPercentual } from '@/domain/calculos'
@@ -31,14 +32,7 @@ export function LinhaPlanejamento({ linha, onSalvarPeso, onRemover }: Props) {
         />
       </td>
       <td className="px-3 py-2 whitespace-nowrap">
-        <span className="inline-flex items-center gap-2">
-          <span
-            aria-hidden
-            className="size-3 shrink-0 rounded-full"
-            style={{ backgroundColor: linha.cor }}
-          />
-          {linha.codigo}
-        </span>
+        <CodigoMateria codigo={linha.codigo} cor={linha.cor} />
       </td>
       <td className="px-3 py-2">{linha.nome}</td>
       <td className="px-3 py-2 text-right tabular-nums">{formatarMinutos(linha.estudadoSeg)}</td>

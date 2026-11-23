@@ -36,34 +36,19 @@ const materias = [
 
 describe('anosDisponiveis (RN27)', () => {
   it('lista os anos com registros e o ano atual, do mais recente ao mais antigo', () => {
-    const anos = anosDisponiveis(
-      [registro({ data: '2026-01-10' }), registro({ data: '2027-01-10' })],
-      2025,
-    )
-    expect(anos).toEqual([2027, 2026, 2025])
+    expect(anosDisponiveis([2026, 2027], 2025)).toEqual([2027, 2026, 2025])
   })
 
   it('sem registros, mostra só o ano atual', () => {
     expect(anosDisponiveis([], 2026)).toEqual([2026])
   })
 
-  it('não conta anos que só têm registros excluídos', () => {
-    const anos = anosDisponiveis([registro({ data: '2024-05-01', excluidoEm: 'x' })], 2026)
-    expect(anos).toEqual([2026])
-  })
-
   it('mantém o ano selecionado mesmo sem registros', () => {
-    const anos = anosDisponiveis([registro({ data: '2024-05-01', excluidoEm: 'x' })], 2026, 2024)
-    expect(anos).toEqual([2026, 2024])
+    expect(anosDisponiveis([], 2026, 2024)).toEqual([2026, 2024])
   })
 
   it('não repete anos', () => {
-    const anos = anosDisponiveis(
-      [registro({ data: '2026-01-10' }), registro({ data: '2026-12-31' })],
-      2026,
-      2026,
-    )
-    expect(anos).toEqual([2026])
+    expect(anosDisponiveis([2026], 2026, 2026)).toEqual([2026])
   })
 })
 

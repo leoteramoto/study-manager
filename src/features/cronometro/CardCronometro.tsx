@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { DURACAO_MAXIMA_MIN, DURACAO_MINIMA_MIN, formatarRelogio } from '@/domain/cronometro'
+import { CLASSE_SELECT } from '@/lib/estilos'
 import { lerUltimaDuracao } from '@/lib/preferencias'
 import { cn } from '@/lib/utils'
 import { AvisoPausaAutomatica } from './AvisoPausaAutomatica'
@@ -23,9 +24,6 @@ interface Props {
   /** Matérias do planejamento, já na ordem objetivo → matéria. */
   materias: readonly MateriaDoPlano[]
 }
-
-const CLASSE_SELECT =
-  'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30'
 
 /** Card do cronômetro na tela Principal (RN15, RN16, RN13). */
 export function CardCronometro({ materias }: Props) {

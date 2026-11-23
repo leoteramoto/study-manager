@@ -5,7 +5,7 @@
 // Os agrupamentos usam só a `data` gravada no registro: mudar o fuso não move
 // nenhum registro de mês (RN37).
 import { somarSegundosPorMateria, type RegistroParaSoma } from './calculos'
-import { anoDaData, intervaloDoMes, type IntervaloDatas } from './tempo'
+import { intervaloDoAno, intervaloDoMes, type IntervaloDatas } from './tempo'
 
 export const MESES = [
   'Jan',
@@ -67,20 +67,18 @@ export interface ItemRanking {
 }
 
 /**
- * Anos do seletor (RN27): os anos com pelo menos um registro não excluído,
- * o ano atual e o ano selecionado (que continua na lista enquanto estiver
- * selecionado, mesmo que tenha ficado sem registros). Do mais recente ao mais antigo.
+ * Anos do seletor (RN27): os anos com pelo menos um registro não excluído
+ * (calculados pelo repositório), o ano atual e o ano selecionado, que continua
+ * na lista enquanto estiver selecionado, mesmo que tenha ficado sem registros.
+ * Do mais recente ao mais antigo.
  */
 export function anosDisponiveis(
-  registros: Iterable<Pick<RegistroParaSoma, 'data' | 'excluidoEm'>>,
+  anosComRegistros: Iterable<number>,
   anoAtual: number,
   anoSelecionado: number | null = null,
 ): number[] {
-  const anos = new Set<number>([anoAtual])
+  const anos = new Set<number>([anoAtual, ...anosComRegistros])
   if (anoSelecionado !== null) anos.add(anoSelecionado)
-  for (const registro of registros) {
-    if (registro.excluidoEm === null) anos.add(anoDaData(registro.data))
-  }
   return [...anos].sort((a, b) => b - a)
 }
 
@@ -151,4 +149,34 @@ export function totalDoPeriodo(
   intervalo: IntervaloDatas,
 ): number {
   return somarSegundosPorMateria(registros, intervalo).totalSeg
+}
+
+export type Periodo = { tipo: 'mes'; ano: number; mes: number } | { tipo: 'ano'; ano: number }
+
+export type EstatisticasDoPeriodo<T extends RegistroParaHistorico> =
+  | { tipo: 'mes'; totalSeg: number; historico: T[]; ranking: ItemRanking[] }
+  | { tipo: 'ano'; totalSeg: number; totaisPorMes: TotalDoMes[]; ranking: ItemRanking[] }
+
+/** Tudo o que a aba selecionada mostra: um mês (RN28) ou o ano (RN29). */
+export function calcularEstatisticasDoPeriodo<T extends RegistroParaHistorico>(
+  registros: readonly T[],
+  materias: readonly MateriaParaEstatistica[],
+  periodo: Periodo,
+): EstatisticasDoPeriodo<T> {
+  if (periodo.tipo === 'ano') {
+    const intervalo = intervaloDoAno(periodo.ano)
+    return {
+      tipo: 'ano',
+      totalSeg: totalDoPeriodo(registros, intervalo),
+      totaisPorMes: totaisPorMes(registros, periodo.ano),
+      ranking: montarRanking(registros, intervalo, materias),
+    }
+  }
+  const intervalo = intervaloDoMes({ ano: periodo.ano, mes: periodo.mes })
+  return {
+    tipo: 'mes',
+    totalSeg: totalDoPeriodo(registros, intervalo),
+    historico: montarHistorico(registros, intervalo),
+    ranking: montarRanking(registros, intervalo, materias),
+  }
 }
