@@ -151,6 +151,8 @@ describe('confirmarSessao', () => {
 
   it('menos de 60 s não é gravado', async () => {
     await iniciarSessao(materia.id, 60, em(0))
+    // Heartbeat recente: sem ele, encerrar aos 59 s seria tratado como suspensão.
+    await aplicarEvento({ tipo: 'heartbeat' }, em(55_000))
     await aplicarEvento({ tipo: 'encerrar' }, em(59_000))
     await expect(confirmarSessao()).rejects.toThrow('menos de 1 minuto')
     expect(await db.registros.count()).toBe(0)
