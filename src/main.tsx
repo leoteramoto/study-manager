@@ -1,11 +1,12 @@
 // Precisa ser o primeiro import (ver o arquivo).
 import './lib/configurarZod'
-import { StrictMode } from 'react'
+import { StrictMode, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import { App } from './app/App'
+import { TelaFalhaBanco } from './app/TelaFalhaBanco'
 import { sinalizarNovaVersao } from './app/pwa/novaVersao'
-import { inicializarBanco } from './db/inicializar'
+import { classificarFalhaBanco, inicializarBanco } from './db/inicializar'
 import { ouvirRestauracao } from './lib/canalRestauracao'
 import { recarregarPagina } from './lib/recarregar'
 import './index.css'
@@ -25,17 +26,16 @@ ouvirRestauracao(recarregarPagina)
 const raiz = document.getElementById('root')
 if (!raiz) throw new Error('Elemento #root não encontrado')
 
-function renderizar() {
-  createRoot(raiz as HTMLElement).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
+function renderizar(conteudo: ReactNode) {
+  createRoot(raiz as HTMLElement).render(<StrictMode>{conteudo}</StrictMode>)
 }
 
 inicializarBanco()
-  .catch((erro: unknown) => {
-    // A tela de falha do banco (RN36) chega na Fase 6.
-    if (import.meta.env.DEV) console.error('Falha ao inicializar o banco', erro)
+  .then(() => {
+    renderizar(<App />)
   })
-  .finally(renderizar)
+  .catch((erro: unknown) => {
+    // RN36: tela de falha em vez de tela branca. Detalhes só no console em desenvolvimento.
+    if (import.meta.env.DEV) console.error('Falha ao inicializar o banco', erro)
+    renderizar(<TelaFalhaBanco tipo={classificarFalhaBanco(erro)} />)
+  })
