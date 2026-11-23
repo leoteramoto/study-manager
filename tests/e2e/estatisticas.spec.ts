@@ -93,3 +93,38 @@ test('RF08: lançamento manual conta na Principal e nas Estatísticas, e a exclu
   await irPara(page, 'Principal')
   await expect(estudadoNaTabela(page)).toHaveText('0')
 })
+
+test('em 360 px, a aba do mês selecionado rola para ficar visível ao abrir e ao trocar de ano', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(AGORA)
+  await cadastrar(page)
+  // Um estudo em 2025, para existir outro ano no seletor.
+  await irPara(page, 'Estatísticas')
+  await page.getByRole('button', { name: 'Lançar estudo manual' }).click()
+  const dialogo = page.getByRole('dialog', { name: 'Lançar estudo manual' })
+  await dialogo.getByLabel('Data').fill('2025-06-10')
+  await dialogo.getByLabel('Tempo (minutos)').fill('30')
+  await dialogo.getByLabel('Matéria').selectOption({ label: 'Matemática-PF' })
+  await dialogo.getByRole('button', { name: 'Lançar' }).click()
+  await expect(dialogo).toBeHidden()
+
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.reload()
+  const novembro = page.getByRole('tab', { name: 'Nov, novembro de 2026' })
+  await expect(novembro).toHaveAttribute('aria-selected', 'true')
+  await expect(novembro).toBeInViewport({ ratio: 1 })
+  await expect(page.getByRole('tab', { name: 'Jan, janeiro de 2026' })).not.toBeInViewport({
+    ratio: 1,
+  })
+
+  // Volta as abas para o início e troca de ano: a aba selecionada volta à vista.
+  await page.getByRole('tablist').evaluate((lista) => {
+    lista.parentElement?.scrollTo({ left: 0 })
+  })
+  await expect(novembro).not.toBeInViewport({ ratio: 1 })
+  await page.getByLabel('Ano').selectOption('2025')
+  await expect(page.getByRole('tab', { name: 'Nov, novembro de 2025' })).toBeInViewport({
+    ratio: 1,
+  })
+})

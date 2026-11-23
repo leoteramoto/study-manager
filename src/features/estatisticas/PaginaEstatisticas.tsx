@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { PlusIcon } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { AvisoErro } from '@/components/AvisoErro'
 import { CabecalhoPagina } from '@/components/CabecalhoPagina'
 import { Button } from '@/components/ui/button'
@@ -77,6 +77,17 @@ export function PaginaEstatisticas() {
     objetivos === undefined ||
     registrosDoAno === undefined
 
+  // Em tela estreita as abas rolam de lado: ao abrir a tela e ao trocar de ano,
+  // a aba selecionada rola para ficar visível. As abas só existem depois do
+  // carregamento, que recomeça a cada troca de ano.
+  const listaAbas = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (carregando) return
+    listaAbas.current
+      ?.querySelector<HTMLElement>('[role="tab"][data-state="active"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  }, [ano, carregando])
+
   return (
     <>
       <CabecalhoPagina titulo="Estatísticas">
@@ -123,7 +134,7 @@ export function PaginaEstatisticas() {
               selecionar(ano, valor)
             }}
           >
-            <div className="max-w-full overflow-x-auto">
+            <div ref={listaAbas} className="max-w-full overflow-x-auto">
               <TabsList aria-label={`Períodos de ${ano}`} className="w-max">
                 {MESES.map((rotulo, indice) => (
                   <TabsTrigger

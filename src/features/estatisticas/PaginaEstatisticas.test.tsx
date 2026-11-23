@@ -336,6 +336,39 @@ describe('PaginaEstatisticas', () => {
     ])
   })
 
+  it('rola a aba selecionada para a vista ao abrir e ao trocar de ano, não ao clicar numa aba', async () => {
+    fixarRelogio('2026-11-22T15:00:00Z')
+    const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
+    const { matPf } = await cenario()
+    await db.registros.bulkAdd([registro(matPf, { data: '2025-06-10', duracaoSeg: 600 })])
+    // Guarda o nome da aba no momento da chamada (o elemento é reaproveitado ao trocar de ano).
+    const nomes: (string | null)[] = []
+    const rolar = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (
+      this: Element,
+    ) {
+      nomes.push(this.getAttribute('aria-label'))
+    })
+    render(<PaginaEstatisticas />)
+
+    const rolagens = () => nomes
+    await waitFor(() => {
+      expect(rolagens()).toEqual(['Nov, novembro de 2026'])
+    })
+    expect(rolar).toHaveBeenLastCalledWith({ block: 'nearest', inline: 'center' })
+
+    await usuario.selectOptions(await screen.findByLabelText('Ano'), '2025')
+    await waitFor(() => {
+      expect(rolagens()).toEqual(['Nov, novembro de 2026', 'Nov, novembro de 2025'])
+    })
+
+    await usuario.click(screen.getByRole('tab', { name: 'Jun, junho de 2025' }))
+    await waitFor(() => {
+      expect(totalExibido()).toBe('0h10')
+    })
+    expect(rolar).toHaveBeenCalledTimes(2)
+    rolar.mockRestore()
+  })
+
   it('ano que ficou sem registros continua no seletor enquanto está selecionado', async () => {
     fixarRelogio('2026-11-22T15:00:00Z')
     const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })

@@ -48,3 +48,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   }
   globalThis.ResizeObserver = ResizeObserverFalso
 }
+
+// jsdom não implementa scrollIntoView (usado nas abas de mês das Estatísticas).
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => undefined
+}
