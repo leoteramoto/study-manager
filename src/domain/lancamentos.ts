@@ -90,11 +90,12 @@ export function montarLancamentoManual(
  * Aplica a edição a um lançamento manual (RN31): preserva id e `criadoEm`,
  * atualiza `atualizadoEm` e usa o objetivo da matéria escolhida.
  */
-export function aplicarEdicaoManual<T extends RegistroManual>(
-  registro: T,
-  dados: DadosLancamento,
-  extra: { objetivoId: string; agora: Date },
-): T {
+export function aplicarEdicaoManual<
+  T extends Pick<
+    RegistroManual,
+    'materiaId' | 'objetivoId' | 'data' | 'duracaoSeg' | 'atualizadoEm'
+  >,
+>(registro: T, dados: DadosLancamento, extra: { objetivoId: string; agora: Date }): T {
   return {
     ...registro,
     materiaId: dados.materiaId,
