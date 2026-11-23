@@ -47,13 +47,33 @@ async function esperarGravacoes() {
   })
 }
 
-/** Avança o relógio em passos, como o tempo real, dando chance aos heartbeats. */
-async function passar(ms: number, passo = 20 * SEG) {
+/**
+ * Espera chegar ao banco um heartbeat gravado depois de `desde`. O motor pula
+ * ticks enquanto uma gravação está em andamento; com a suíte rodando em
+ * paralelo, a gravação pode demorar mais que alguns milissegundos reais, e sem
+ * esta espera o passo seguinte veria mais de 30 s sem heartbeat e o motor
+ * (corretamente) trataria como suspensão.
+ */
+async function esperarHeartbeatDesde(desde: number) {
+  await waitFor(async () => {
+    const sessao = await obterSessao()
+    if (sessao?.estado !== 'em_andamento') return
+    expect(Date.parse(sessao.ultimoHeartbeatEm)).toBeGreaterThan(desde)
+  })
+}
+
+/**
+ * Avança o relógio em passos, como o tempo real, dando chance aos heartbeats.
+ * Numa aba seguidora ninguém grava heartbeat: passe `comHeartbeat = false`.
+ */
+async function passar(ms: number, passo = 20 * SEG, comHeartbeat = true) {
   for (let feito = 0; feito < ms; feito += passo) {
+    const inicioDoPasso = Date.now()
     act(() => {
       vi.advanceTimersByTime(Math.min(passo, ms - feito))
     })
     await esperarGravacoes()
+    if (comHeartbeat) await esperarHeartbeatDesde(inicioDoPasso)
   }
 }
 
@@ -358,7 +378,7 @@ describe('liderança entre abas e recuperação (RN20)', () => {
     renderizarCard(criarLiderancaManual({ papel: 'seguidora' }))
 
     await screen.findByRole('button', { name: 'Pausar' })
-    await passar(40 * SEG, 5 * SEG)
+    await passar(40 * SEG, 5 * SEG, false)
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(await obterSessao()).toEqual(antes)
     // A seguidora exibe o tempo pelo relógio.
@@ -370,12 +390,12 @@ describe('liderança entre abas e recuperação (RN20)', () => {
     const lideranca = criarLiderancaManual({ papel: 'seguidora' })
     renderizarCard(lideranca)
     await screen.findByRole('button', { name: 'Pausar' })
-    await passar(3 * SEG, SEG)
+    await passar(3 * SEG, SEG, false)
 
     act(() => {
       lideranca.definir({ papel: 'lider', modo: 'sucessao' })
     })
-    await passar(15 * SEG, 5 * SEG)
+    await passar(15 * SEG, 5 * SEG, false)
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     const sessao = await obterSessao()
