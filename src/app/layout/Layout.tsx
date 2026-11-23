@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router'
+import { LembreteBackup } from '@/features/backup/LembreteBackup'
 import { IndicadorSessao } from '@/features/cronometro/IndicadorSessao'
 import { ProvedorCronometro } from '@/features/cronometro/ProvedorCronometro'
 import { AvisoNovaVersao } from '../pwa/AvisoNovaVersao'
@@ -23,7 +24,7 @@ export function Layout() {
           Pular para o conteúdo
         </a>
         <BarraLateral />
-        {/* Fase 6: lembrete de backup (RN34) entra acima do cabeçalho. */}
+        <LembreteBackup />
         <header className="bg-background/95 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur lg:px-8">
           <MenuMobile />
           <div className="lg:hidden">

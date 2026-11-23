@@ -410,3 +410,16 @@ export function resumirBackup({ exportadoEm, dados }: BackupValidado): ResumoBac
     registrosExcluidos: dados.registros.filter((r) => r.excluidoEm !== null).length,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Lembrete (RN34)
+// ---------------------------------------------------------------------------
+
+export const DIAS_LEMBRETE_BACKUP = 7
+const LIMITE_LEMBRETE_MS = DIAS_LEMBRETE_BACKUP * 24 * 60 * 60 * 1000
+
+/** Lembrete quando nunca houve backup ou o último tem mais de 7 dias (RN34). */
+export function precisaLembreteBackup(ultimoBackupEm: string | null, agora: Date): boolean {
+  if (ultimoBackupEm === null) return true
+  return agora.getTime() - Date.parse(ultimoBackupEm) > LIMITE_LEMBRETE_MS
+}

@@ -7,6 +7,7 @@ import {
   migrarDados,
   montarArquivoBackup,
   nomeArquivoBackup,
+  precisaLembreteBackup,
   resumirBackup,
   TAMANHO_MAXIMO_BACKUP_BYTES,
   tamanhoBackupAceito,
@@ -542,5 +543,19 @@ describe('resumirBackup (RN33, passo 6)', () => {
       registros: 3,
       registrosExcluidos: 1,
     })
+  })
+})
+
+describe('precisaLembreteBackup (RN34)', () => {
+  const agora = new Date('2026-11-22T12:00:00.000Z')
+
+  it('lembra quando nunca houve backup', () => {
+    expect(precisaLembreteBackup(null, agora)).toBe(true)
+  })
+
+  it('lembra só depois de mais de 7 dias', () => {
+    expect(precisaLembreteBackup('2026-11-15T12:00:00.000Z', agora)).toBe(false)
+    expect(precisaLembreteBackup('2026-11-15T11:59:59.999Z', agora)).toBe(true)
+    expect(precisaLembreteBackup('2026-11-21T12:00:00.000Z', agora)).toBe(false)
   })
 })
