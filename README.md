@@ -17,7 +17,7 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 | 3    | Planejamento e tela Principal                   | Concluída |
 | 4    | Cronômetro                                      | Concluída |
 | 5    | Estatísticas e lançamentos manuais              | Concluída |
-| 6    | Backup, configurações e acabamento              | A fazer   |
+| 6    | Backup, configurações e acabamento              | Concluída |
 
 ## Como usar
 
@@ -70,6 +70,14 @@ Em **Estatísticas** fica todo o histórico, separado por ano e por mês.
 - A tela Principal e as Estatísticas somam os mesmos registros, então os totais do mês batem. A soma é feita em segundos; cada linha arredonda os minutos para baixo, então a soma das linhas exibidas pode ficar um ou dois minutos abaixo do total.
 - Os meses usam a data gravada em cada registro (a do início, no fuso configurado). Mudar o fuso depois não move nenhum estudo de mês.
 
+### Configurações
+
+- **Fuso horário:** Fernando de Noronha, Brasília, Amazonas, Acre ou **Outros** (qualquer fuso IANA, como `Europe/Lisbon`). O fuso define a data de hoje, o mês atual e a data dos registros novos. **Registros já gravados mantêm a data.**
+- **Som:** liga ou desliga o som do fim do cronômetro, escolhe entre 3 sons e ajusta o volume. **Testar** toca o som escolhido mesmo com o som desligado.
+- **Notificações:** pede a permissão do navegador e mostra a situação atual.
+- **Armazenamento:** mostra se o navegador guarda os dados de forma persistente (sem apagá-los por falta de espaço). Quando não guarda, oferece **Pedir armazenamento persistente**.
+- **Backup:** exportar e restaurar (veja [Backup e restauração](#backup-e-restauração)).
+
 ## Requisitos
 
 - Node.js 24 (LTS) e npm. Com [nvm](https://github.com/nvm-sh/nvm): `nvm use`.
@@ -110,6 +118,8 @@ npm run test:coverage   # idem, com cobertura (mínimo de 90% em src/domain)
 npm run test:e2e        # testes ponta a ponta (Playwright, Chromium e Firefox)
 ```
 
+Os E2E cobrem os fluxos cadastro → planejamento → cronômetro → confirmação → estatísticas, a recuperação de sessão, o backup e a restauração (com outra aba aberta e com arquivo alterado), e a tela de falha do banco. O teste [`acessibilidade.spec.ts`](tests/e2e/acessibilidade.spec.ts) verifica as regras WCAG 2.1 A/AA (inclusive contraste) com o axe nas 4 telas e nos diálogos principais, nos temas claro e escuro, e confere que nenhuma tela rola de lado em 360 px.
+
 O build usado pelo E2E define `VITE_FONTE_TICKS=principal`: o cronômetro passa a usar o `setInterval` da página em vez do Web Worker, para o `page.clock` do Playwright controlar o tempo. O worker só avisa "verifique agora" e nunca informa tempo, então o cálculo é o mesmo nos dois casos.
 
 ## Atualizações do app
@@ -139,11 +149,33 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda lint, for
 3. Em **Settings → Secrets and variables → Actions → Variables**, crie a variável `DEPLOY_PAGES` com o valor `true`.
 4. A partir daí, todo push na `main` que passar nas verificações publica o app em `https://<usuário>.github.io/<repositório>/`.
 
+**`npm audit`:** o CI falha com vulnerabilidades altas ou críticas. Hoje restam 4 moderadas, todas em dependências de desenvolvimento usadas só no build: `vite-plugin-pwa` → `workbox-build` → `glob`/`minimatch`. Nada disso vai para o app publicado (`npm audit --omit=dev` não encontra nenhuma). A correção sugerida pelo npm rebaixaria o `vite-plugin-pwa` para uma versão incompatível, então elas ficam até o `workbox-build` atualizar o `glob`.
+
 O caminho base é definido pela variável `VITE_BASE_PATH` (veja [`.env.example`](.env.example)). No CI ela vale `/<nome-do-repositório>/`; localmente, `/`.
 
 ## Backup e restauração
 
-_Chega na Fase 6._ Os dados ficam só no navegador, então será possível exportar um arquivo JSON de backup e restaurá-lo em Configurações.
+Os dados ficam só no navegador. **Faça backups com frequência**: se o navegador apagar os dados do site, o backup é a única cópia.
+
+**Exportar:** em **Configurações → Backup**, clique em **Exportar backup**. O app baixa `study-manager-backup-AAAA-MM-DD-HHmm.json` com tudo: objetivos e matérias (inclusive arquivados), planejamento, registros (inclusive os excluídos) e configurações. A sessão do cronômetro em andamento não entra. Antes de baixar, o app valida o próprio arquivo com as mesmas regras da restauração; se algo estiver errado, nada é baixado e a mensagem explica o motivo.
+
+**Lembrete:** sem nenhum backup, ou com o último feito há mais de 7 dias, aparece uma faixa no topo com o botão **Fazer backup agora**.
+
+**Restaurar:** em **Configurações → Backup**, clique em **Restaurar de um backup** e escolha o arquivo.
+
+1. A restauração fica bloqueada enquanto houver uma sessão do cronômetro, em qualquer aba.
+2. O arquivo é conferido antes de qualquer alteração: tamanho (até 50 MB), formato, checksum SHA-256 (um arquivo alterado é recusado), versão e integridade dos dados (matérias, objetivos e registros que apontam uns para os outros, siglas e códigos únicos).
+3. O app mostra um resumo (data do backup e quantidade de objetivos, matérias e registros) e pede confirmação: **isto substituirá todos os dados atuais**.
+4. Antes de substituir, o app **baixa automaticamente um backup dos dados atuais**.
+5. Os dados são substituídos de uma vez só. Se algo falhar, nada é alterado.
+6. Depois do sucesso, o app recarrega. **As outras abas abertas também recarregam sozinhas**, para não ficarem com dados antigos na tela.
+
+**Endereço seguro:** o checksum usa a criptografia do navegador, que só funciona em `https` ou `localhost`. Aberto por `http` num IP da rede, o app avisa que o backup não está disponível.
+
+**Falha do banco:** se o banco do navegador não abrir, o app mostra uma tela de erro em vez de uma tela branca:
+
+- **Banco corrompido ou que não abre:** **Tentar novamente** ou **Restaurar de um backup**. Nesse caso não dá para fazer backup dos dados atuais antes, porque eles não podem ser lidos. O banco é apagado e recriado com o backup, só depois da sua confirmação.
+- **Dados gravados por uma versão mais nova do app:** só **Recarregar**, para receber a versão atual. Nada é apagado.
 
 ## Ícones e sons
 
