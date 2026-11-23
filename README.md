@@ -16,7 +16,7 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 | 2    | Cadastro de objetivos e matérias                | Concluída |
 | 3    | Planejamento e tela Principal                   | Concluída |
 | 4    | Cronômetro                                      | Concluída |
-| 5    | Estatísticas e lançamentos manuais              | A fazer   |
+| 5    | Estatísticas e lançamentos manuais              | Concluída |
 | 6    | Backup, configurações e acabamento              | A fazer   |
 
 ## Como usar
@@ -56,6 +56,19 @@ O card **Cronômetro** fica na tela Principal. A sessão ativa aparece na barra 
 - Com o app aberto em várias abas, uma só cuida da sessão (e toca o alarme). Abrir outra aba não interrompe nada, e se a aba principal fechar, outra assume sem pausar.
 
 **Para o cronômetro não ser pausado à toa:** deixe a aba do app aberta durante a sessão (de preferência instale-o como app) e, no Chrome, inclua o site em **Configurações → Desempenho → Sempre manter estes sites ativos**, para a Economia de memória não descarregar a aba.
+
+### Estatísticas e lançamentos manuais
+
+Em **Estatísticas** fica todo o histórico, separado por ano e por mês.
+
+- O seletor de **Ano** lista os anos com estudos e o ano atual. Cada ano tem as abas **Jan a Dez** e **Ano**. A tela abre no mês atual e, com o app aberto, acompanha a virada do mês; se você escolher outro mês, ele fica selecionado. Ao trocar de ano, a aba do mês é mantida.
+- **Aba do mês:** o total do mês, o **Histórico** (data, início, término, tempo em minutos, matéria, origem e ações; do mais recente para o mais antigo, com os lançamentos manuais depois dos registros do cronômetro do mesmo dia) e o **Ranking** das matérias estudadas no mês, inclusive arquivadas.
+- **Aba Ano:** o total do ano, o total de cada um dos 12 meses e o tempo de cada matéria estudada no ano.
+- **Lançar estudo manual:** data (hoje ou antes, nunca no futuro, pelo fuso configurado), tempo de 1 a 480 minutos e uma matéria ativa de qualquer objetivo, mesmo fora do planejamento. O lançamento conta em todas as estatísticas e na tela Principal.
+- **Editar** existe só para lançamentos manuais (data, tempo e matéria). Se a matéria foi arquivada depois, dá para editar mantendo-a, mas não trocar para outra arquivada. Registros do cronômetro não podem ser editados, só excluídos.
+- **Excluir** pede confirmação. O registro some das telas e das somas, mas continua guardado no banco e nos backups.
+- A tela Principal e as Estatísticas somam os mesmos registros, então os totais do mês batem. A soma é feita em segundos; cada linha arredonda os minutos para baixo, então a soma das linhas exibidas pode ficar um ou dois minutos abaixo do total.
+- Os meses usam a data gravada em cada registro (a do início, no fuso configurado). Mudar o fuso depois não move nenhum estudo de mês.
 
 ## Requisitos
 

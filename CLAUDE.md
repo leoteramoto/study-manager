@@ -97,3 +97,15 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - **Modal de confirmação global e não fechável:** abre sozinho em qualquer tela; só sai por Confirmar ou Cancelar. Com menos de 60 s, "Descartar" não pede 2ª confirmação.
 - **PWA com `registerType: 'prompt'`:** aviso "Nova versão disponível" no cabeçalho; "Atualizar" fica desabilitado enquanto houver sessão.
 - Se, ao fechar o trecho por suspensão/recuperação, o tempo já alcançou o planejado, a sessão vai para a confirmação como `concluido`. A `data` do registro usa o fuso configurado na confirmação, aplicado a `inicioEm`. A sessão continua se a matéria sair do planejamento no meio dela.
+
+## Decisões da Fase 5 (casos não cobertos pela especificação, confirmados pelo usuário)
+- **Evento do usuário logo após pausa automática:** se a verificação feita antes de qualquer evento aplicar uma pausa automática, o evento não é aplicado e só a pausa é devolvida (com o aviso e o "Contar esse tempo"). Vale para encerrar, continuar e pausar.
+- **Ordem do histórico (RN28):** data decrescente; no mesmo dia, primeiro os registros do cronômetro (início mais recente primeiro), depois os manuais (`criadoEm` mais recente primeiro); desempate final pelo id.
+- **Lançamento manual:** a data é a string `YYYY-MM-DD` do campo, gravada sem passar por `new Date()`. "Não futura" compara com hoje no fuso configurado, revalidado na transação. Sem data mínima e sem limite diário. Pode ser da mesma matéria da sessão ativa, sem aviso. Valores iniciais: data = hoje; minutos e matéria vazios. O seletor lista só matérias ativas de objetivos ativos, agrupadas por objetivo.
+- **Edição de lançamento com matéria arquivada:** permite editar data e tempo mantendo a matéria; não permite trocar para outra matéria arquivada. Editar preserva `criadoEm`, atualiza `atualizadoEm` e recalcula `objetivoId`.
+- **Exclusão (RN31):** pede confirmação, vale para registros do cronômetro e manuais. Registro excluído não pode ser editado nem excluído de novo.
+- **Seletor de ano (RN27):** anos com pelo menos um registro **não excluído**, mais o ano atual. O ano exibido continua na lista enquanto estiver selecionado, mesmo que fique sem registros; ao sair dele, some. Trocar de ano mantém a aba de mês.
+- **Aba do mês atual:** a seleção começa "acompanhando o mês atual" (vira sozinha na virada do mês, via `useAgora`). Escolher outra aba ou ano fixa a seleção; voltar ao mês atual volta a acompanhá-lo. Seletor e abas só aparecem depois que as configurações (fuso) carregam.
+- **Ranking:** só matérias com tempo > 0 no período, inclusive arquivadas; empate pelo código. A aba Ano mostra os 12 meses, inclusive os zerados.
+- **Coluna Origem:** "Cronômetro" (com o tipo de encerramento em texto secundário) ou "Manual".
+- **Totais batem:** Principal e Estatísticas usam a mesma função (`somarSegundosPorMateria`) sobre o mesmo filtro de `data`. Nenhuma das duas inclui a sessão em andamento (só registros confirmados).
