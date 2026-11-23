@@ -129,7 +129,8 @@ export function PaginaEstatisticas() {
                   <TabsTrigger
                     key={rotulo}
                     value={String(indice + 1)}
-                    aria-label={`${NOMES_MESES[indice] ?? rotulo} de ${ano}`}
+                    // O nome acessível começa pelo texto visível (WCAG 2.5.3).
+                    aria-label={`${rotulo}, ${NOMES_MESES[indice] ?? rotulo} de ${ano}`}
                   >
                     {rotulo}
                   </TabsTrigger>

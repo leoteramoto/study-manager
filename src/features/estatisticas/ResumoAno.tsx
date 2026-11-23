@@ -16,7 +16,7 @@ function capitalizar(texto: string): string {
 /** Aba "Ano" (RN29): total de cada mês e das matérias estudadas no ano. */
 export function ResumoAno({ ano, totaisPorMes, ranking }: Props) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
       <Card>
         <CardHeader>
           <CardTitle>

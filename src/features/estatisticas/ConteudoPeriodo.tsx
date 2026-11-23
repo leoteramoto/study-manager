@@ -59,7 +59,8 @@ export function ConteudoPeriodo({
   }
 
   return (
-    <div className="grid gap-6">
+    // minmax(0, 1fr): a coluna não cresce até a largura da tabela; a tabela rola dentro dela.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <Card className="w-fit min-w-56">
         <CardContent>
           <p className="text-sm text-muted-foreground">Total de {nome}</p>
@@ -76,7 +77,7 @@ export function ConteudoPeriodo({
           ranking={estatisticas.ranking}
         />
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <Card>
             <CardHeader>
               <CardTitle>

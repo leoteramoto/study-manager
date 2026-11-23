@@ -113,7 +113,7 @@ describe('PaginaEstatisticas', () => {
 
     render(<PaginaEstatisticas />)
 
-    expect(await screen.findByRole('tab', { name: 'novembro de 2026' })).toHaveAttribute(
+    expect(await screen.findByRole('tab', { name: 'Nov, novembro de 2026' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -310,11 +310,11 @@ describe('PaginaEstatisticas', () => {
 
     // Trocar de ano mantém a aba de mês (março).
     await usuario.selectOptions(seletor, '2026')
-    expect(screen.getByRole('tab', { name: 'março de 2026' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Mar, março de 2026' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
-    await usuario.click(screen.getByRole('tab', { name: 'janeiro de 2026' }))
+    await usuario.click(screen.getByRole('tab', { name: 'Jan, janeiro de 2026' }))
     await waitFor(() => {
       expect(totalExibido()).toBe('3h00')
     })
@@ -376,7 +376,7 @@ describe('PaginaEstatisticas', () => {
     ])
     render(<PaginaEstatisticas />)
 
-    expect(await screen.findByRole('tab', { name: 'novembro de 2026' })).toHaveAttribute(
+    expect(await screen.findByRole('tab', { name: 'Nov, novembro de 2026' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -389,7 +389,7 @@ describe('PaginaEstatisticas', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'dezembro de 2026' })).toHaveAttribute(
+      expect(screen.getByRole('tab', { name: 'Dez, dezembro de 2026' })).toHaveAttribute(
         'aria-selected',
         'true',
       )
@@ -405,11 +405,11 @@ describe('PaginaEstatisticas', () => {
     await cenario()
     render(<PaginaEstatisticas />)
 
-    await usuario.click(await screen.findByRole('tab', { name: 'outubro de 2026' }))
+    await usuario.click(await screen.findByRole('tab', { name: 'Out, outubro de 2026' }))
     act(() => {
       vi.advanceTimersByTime(60_000)
     })
-    expect(screen.getByRole('tab', { name: 'outubro de 2026' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Out, outubro de 2026' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
