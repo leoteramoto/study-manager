@@ -236,12 +236,52 @@ describe('fim do tempo planejado (RN15)', () => {
   })
 })
 
+describe('evento do usuário logo após uma pausa automática', () => {
+  // Heartbeats até 40 s, depois o computador dorme; o clique chega aos 10 min.
+  const dormiu = () => rodando(60, 40 * SEG)
+  const pausaEsperada = {
+    estado: 'pausado',
+    motivoPausaAutomatica: 'suspensao',
+    acumuladoSeg: 40,
+    ultimoHeartbeatEm: em(40 * SEG).toISOString(),
+    pausaDetectadaEm: em(10 * MIN).toISOString(),
+    tipoEncerramento: null,
+    fimEm: null,
+  }
+
+  it('encerrar devolve só a pausa, sem ir para a confirmação', () => {
+    const r = transicionar(dormiu(), { tipo: 'encerrar' }, em(10 * MIN))
+    expect(r.sessao).toMatchObject(pausaEsperada)
+    expect(r.efeitos).toEqual(['pausaAutomatica'])
+    expect(r.alterada).toBe(true)
+    expect(intervaloNaoContadoSeg(r.sessao as Sessao)).toBe(10 * 60 - 40)
+  })
+
+  it('continuar devolve só a pausa, sem apagar o aviso', () => {
+    const r = transicionar(dormiu(), { tipo: 'continuar' }, em(10 * MIN))
+    expect(r.sessao).toMatchObject({ ...pausaEsperada, segmentoInicioEm: null })
+    expect(r.efeitos).toEqual(['pausaAutomatica'])
+  })
+
+  it('pausar devolve a pausa automática, não uma pausa manual', () => {
+    const r = transicionar(dormiu(), { tipo: 'pausar' }, em(10 * MIN))
+    expect(r.sessao).toMatchObject(pausaEsperada)
+  })
+
+  it('o evento seguinte, já com a sessão pausada, é aplicado normalmente', () => {
+    const pausada = aplicar(dormiu(), { tipo: 'encerrar' }, 10 * MIN)
+    const r = transicionar(pausada, { tipo: 'encerrar' }, em(10 * MIN + SEG))
+    expect(r.sessao).toMatchObject({
+      estado: 'aguardando_confirmacao',
+      tipoEncerramento: 'antecipado',
+      acumuladoSeg: 40,
+      fimEm: em(40 * SEG).toISOString(),
+    })
+  })
+})
+
 describe('encerrar antes do fim', () => {
   it('em andamento: aos 23 de 60 min, conta 23 min e o término é o clique', () => {
-    const s = rodando(60)
-    const r = transicionar(s, { tipo: 'encerrar' }, em(23 * MIN))
-    // Sem heartbeats por 23 min: a verificação trata como suspensão.
-    expect(r.sessao?.estado).toBe('aguardando_confirmacao')
     const comHeartbeat = rodando(60, 23 * MIN)
     const r2 = transicionar(comHeartbeat, { tipo: 'encerrar' }, em(23 * MIN))
     expect(r2.sessao).toMatchObject({

@@ -275,6 +275,11 @@ export function transicionar(
   // Todo evento passa antes pela verificação: um clique logo depois de acordar
   // o computador não pode contar o tempo em que ele dormiu.
   const previo = verificar(atual, agoraMs)
+  // Se a verificação acabou de aplicar uma pausa automática, o evento do
+  // usuário não é aplicado: a sessão fica pausada, com o aviso e o "Contar esse
+  // tempo", e a decisão volta para o usuário (ex.: encerrar não vai direto para
+  // a confirmação; continuar não apaga o aviso).
+  if (previo.efeitos.includes('pausaAutomatica')) return previo
   const sessao = previo.sessao ?? atual
 
   switch (evento.tipo) {
