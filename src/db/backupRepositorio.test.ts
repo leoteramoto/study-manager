@@ -3,7 +3,9 @@ import { criarBanco, db } from './banco'
 import {
   existeSessaoAtiva,
   gerarBackup,
+  gerarCopiaSeguranca,
   lerDadosAtuais,
+  MENSAGEM_FALHA_COPIA,
   MENSAGEM_SESSAO_ATIVA,
   registrarBackupFeito,
   restaurarBackup,
@@ -15,6 +17,7 @@ import { arquivarMateria, criarMateria } from './materiasRepositorio'
 import { arquivarObjetivo, criarObjetivo } from './objetivosRepositorio'
 import { popularDadosDeTeste } from './seedDesenvolvimento'
 import type { SessaoAtiva } from './tipos'
+import type { DadosBackup } from '@/domain/backup'
 import { MENSAGEM_SEM_CRIPTOGRAFIA } from '@/lib/criptografia'
 
 const AGORA = new Date('2026-11-22T15:00:00.000Z')
@@ -27,6 +30,7 @@ beforeEach(async () => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
   db.close()
 })
@@ -189,5 +193,34 @@ describe('restaurarEmBancoNovo (RN36)', () => {
     await restaurarEmBancoNovo((await validarBackup(arquivo.conteudo)).dados)
     expect(db.isOpen()).toBe(true)
     expect((await db.objetivos.toArray()).map((o) => o.sigla).sort()).toEqual(['CF', 'PF'])
+  })
+})
+
+describe('gerarCopiaSeguranca (RN33, passo 8)', () => {
+  it('copia os dados atuais com o nome próprio, mesmo os que a validação recusaria', async () => {
+    await popularDadosDeTeste(AGORA)
+    const [registro] = await db.registros.filter((r) => r.origem === 'cronometro').toArray()
+    if (!registro) throw new Error('sem registro')
+    await db.registros.put({ ...registro, duracaoPlanejadaMin: 600 })
+
+    const copia = await gerarCopiaSeguranca(AGORA)
+    expect(copia.nome).toBe('study-manager-antes-da-restauracao-2026-11-22-1200.json')
+    const envelope = JSON.parse(copia.conteudo) as { app: string; dados: DadosBackup }
+    expect(envelope.app).toBe('study-manager')
+    expect(envelope.dados.registros).toHaveLength(8)
+    expect(envelope.dados.registros.find((r) => r.id === registro.id)?.duracaoPlanejadaMin).toBe(
+      600,
+    )
+  })
+
+  it('a cópia de dados válidos é restaurável', async () => {
+    await popularDadosDeTeste(AGORA)
+    const copia = await gerarCopiaSeguranca(AGORA)
+    await expect(validarBackup(copia.conteudo)).resolves.toBeDefined()
+  })
+
+  it('falha de leitura vira "Não foi possível copiar os dados atuais."', async () => {
+    vi.spyOn(db.objetivos, 'toArray').mockRejectedValueOnce(new Error('disco'))
+    await expect(gerarCopiaSeguranca(AGORA)).rejects.toThrow(MENSAGEM_FALHA_COPIA)
   })
 })

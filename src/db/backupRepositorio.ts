@@ -146,3 +146,22 @@ export async function restaurarEmBancoNovo(
   await banco.open()
   await restaurarBackup(dados, banco)
 }
+
+export const MENSAGEM_FALHA_COPIA = 'Não foi possível copiar os dados atuais.'
+
+/**
+ * Cópia dos dados atuais antes de restaurar (RN33, passo 8). Não passa pela
+ * validação: ela guarda o que existe, mesmo que esteja inconsistente. Mesmo
+ * formato da exportação (RN32), então também pode ser restaurada.
+ */
+export async function gerarCopiaSeguranca(agora: Date = new Date()): Promise<ArquivoBackup> {
+  garantirCriptografia()
+  let dados: DadosBackup
+  try {
+    dados = await lerDadosAtuais()
+  } catch (erro) {
+    if (import.meta.env.DEV) console.error('Falha ao ler os dados para a cópia', erro)
+    throw new ErroNegocio(MENSAGEM_FALHA_COPIA)
+  }
+  return montarArquivoBackup(dados, agora, dados.configuracoes.fusoHorario, 'antesDaRestauracao')
+}

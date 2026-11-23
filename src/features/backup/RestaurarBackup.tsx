@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { UploadIcon } from 'lucide-react'
+import { DownloadIcon, UploadIcon } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { AvisoErro } from '@/components/AvisoErro'
 import {
@@ -14,7 +14,8 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   existeSessaoAtiva,
-  gerarBackup,
+  gerarCopiaSeguranca,
+  MENSAGEM_FALHA_COPIA,
   MENSAGEM_SESSAO_ATIVA,
   restaurarBackup,
   restaurarEmBancoNovo,
@@ -33,21 +34,27 @@ import { baixarArquivo } from '@/lib/download'
 import { recarregarPagina } from '@/lib/recarregar'
 import { useExecutar } from '@/lib/useExecutar'
 
-/** Tempo para o usuário ler o sucesso antes da recarga automática. */
-export const ESPERA_RECARGA_MS = 2500
-
 type Etapa =
   | { tipo: 'ocioso' }
   | { tipo: 'confirmar'; backup: BackupValidado }
   | { tipo: 'restaurando'; backup: BackupValidado }
   | { tipo: 'concluido' }
 
+/** Cópia dos dados atuais antes de substituir (RN33, passo 8). */
+type Copia =
+  | { situacao: 'pendente' }
+  | { situacao: 'copiando' }
+  | { situacao: 'baixada'; nome: string }
+  | { situacao: 'falhou' }
+  /** O usuário confirmou, uma segunda vez, seguir sem cópia. */
+  | { situacao: 'dispensada' }
+
 interface Props {
   /**
-   * `normal`: Configurações; exige não haver sessão e baixa um backup dos
-   * dados atuais antes de substituir (RN33).
+   * `normal`: Configurações; exige não haver sessão e que o usuário baixe a
+   * cópia dos dados atuais antes de substituir (RN33).
    * `bancoComFalha`: tela de falha do banco (RN36); apaga e recria o banco,
-   * sem backup prévio, porque os dados atuais não podem ser lidos.
+   * sem cópia prévia, porque os dados atuais não podem ser lidos.
    */
   modo: 'normal' | 'bancoComFalha'
   /** Fuso usado para mostrar a data do backup. */
@@ -68,6 +75,7 @@ async function lerTexto(arquivo: File): Promise<string> {
 export function RestaurarBackup({ modo, fuso }: Props) {
   const entrada = useRef<HTMLInputElement>(null)
   const [etapa, setEtapa] = useState<Etapa>({ tipo: 'ocioso' })
+  const [copia, setCopia] = useState<Copia>({ situacao: 'pendente' })
   const { erro, executar, limparErro } = useExecutar()
   const normal = modo === 'normal'
   // Na tela de falha o banco não abre: a consulta não é feita.
@@ -84,8 +92,23 @@ export function RestaurarBackup({ modo, fuso }: Props) {
       if (!tamanhoBackupAceito(arquivo.size)) throw new ErroNegocio(MENSAGENS_BACKUP.grande)
       // Passos 2 a 5.
       const backup = await validarBackup(await lerTexto(arquivo))
+      setCopia({ situacao: 'pendente' })
       setEtapa({ tipo: 'confirmar', backup })
     })
+  }
+
+  // Passo 8: a cópia é baixada por um clique próprio, antes de substituir.
+  // Assim o download termina (inclusive com "perguntar onde salvar") sem
+  // depender de nenhuma recarga da página.
+  const baixarCopia = async () => {
+    setCopia({ situacao: 'copiando' })
+    try {
+      const arquivo = await gerarCopiaSeguranca()
+      baixarArquivo(arquivo.nome, arquivo.conteudo)
+      setCopia({ situacao: 'baixada', nome: arquivo.nome })
+    } catch {
+      setCopia({ situacao: 'falhou' })
+    }
   }
 
   const confirmar = async (backup: BackupValidado) => {
@@ -93,9 +116,6 @@ export function RestaurarBackup({ modo, fuso }: Props) {
     const ok = await executar(async () => {
       if (normal) {
         if (await existeSessaoAtiva()) throw new ErroNegocio(MENSAGEM_SESSAO_ATIVA)
-        // Passo 8: backup automático dos dados atuais antes de substituir.
-        const seguranca = await gerarBackup()
-        baixarArquivo(seguranca.nome, seguranca.conteudo)
         // Passo 9: tudo numa transação só.
         await restaurarBackup(backup.dados)
       } else {
@@ -106,14 +126,16 @@ export function RestaurarBackup({ modo, fuso }: Props) {
       setEtapa({ tipo: 'ocioso' })
       return
     }
+    // As outras abas recarregam sozinhas; esta espera o clique em "Recarregar".
     avisarRestauracao()
     setEtapa({ tipo: 'concluido' })
-    setTimeout(recarregarPagina, ESPERA_RECARGA_MS)
   }
 
   const bloqueado = normal && sessaoAtiva === true
   const resumo =
     etapa.tipo === 'confirmar' || etapa.tipo === 'restaurando' ? resumirBackup(etapa.backup) : null
+  const restaurando = etapa.tipo === 'restaurando'
+  const podeSubstituir = !normal || copia.situacao === 'baixada' || copia.situacao === 'dispensada'
 
   return (
     <div className="grid gap-3">
@@ -143,21 +165,27 @@ export function RestaurarBackup({ modo, fuso }: Props) {
       <AlertDialog
         open={etapa.tipo !== 'ocioso'}
         onOpenChange={(aberto) => {
+          // Só a confirmação pode ser fechada (Cancelar ou Esc). O sucesso fica
+          // aberto até "Recarregar".
           if (!aberto && etapa.tipo === 'confirmar') setEtapa({ tipo: 'ocioso' })
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent
+          onEscapeKeyDown={(evento) => {
+            if (etapa.tipo !== 'confirmar') evento.preventDefault()
+          }}
+        >
           {etapa.tipo === 'concluido' ? (
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>Backup restaurado</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Os dados foram substituídos com sucesso. O app vai recarregar para mostrar os
-                  dados restaurados.
+                  Os dados foram substituídos com sucesso. Recarregue o app para ver os dados
+                  restaurados.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <Button onClick={recarregarPagina}>Recarregar agora</Button>
+                <Button onClick={recarregarPagina}>Recarregar</Button>
               </AlertDialogFooter>
             </>
           ) : (
@@ -183,23 +211,31 @@ export function RestaurarBackup({ modo, fuso }: Props) {
                       ` (${formatoNumero.format(resumo.registrosExcluidos)} excluídos)`}
                   </dd>
                 </dl>
-                <p className="text-sm">
-                  {normal
-                    ? 'Antes de substituir, o app baixa um backup dos dados atuais.'
-                    : 'Não é possível fazer backup dos dados atuais antes, porque o banco não abre. Eles serão apagados definitivamente.'}
-                </p>
+                {normal ? (
+                  <PassoCopia
+                    copia={copia}
+                    desabilitado={restaurando}
+                    onBaixar={() => void baixarCopia()}
+                    onDispensar={() => {
+                      setCopia({ situacao: 'dispensada' })
+                    }}
+                  />
+                ) : (
+                  <p className="text-sm">
+                    Não é possível fazer backup dos dados atuais antes, porque o banco não abre.
+                    Eles serão apagados definitivamente.
+                  </p>
+                )}
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={etapa.tipo === 'restaurando'}>
-                    Cancelar
-                  </AlertDialogCancel>
+                  <AlertDialogCancel disabled={restaurando}>Cancelar</AlertDialogCancel>
                   <Button
                     variant="destructive"
-                    disabled={etapa.tipo === 'restaurando'}
+                    disabled={restaurando || !podeSubstituir}
                     onClick={() => {
                       if (etapa.tipo === 'confirmar') void confirmar(etapa.backup)
                     }}
                   >
-                    {etapa.tipo === 'restaurando' ? 'Restaurando…' : 'Substituir dados'}
+                    {restaurando ? 'Restaurando…' : 'Substituir dados'}
                   </Button>
                 </AlertDialogFooter>
               </>
@@ -207,6 +243,55 @@ export function RestaurarBackup({ modo, fuso }: Props) {
           )}
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  )
+}
+
+interface PropsPassoCopia {
+  copia: Copia
+  desabilitado: boolean
+  onBaixar: () => void
+  onDispensar: () => void
+}
+
+/** Botão da cópia dos dados atuais e a situação dela. */
+function PassoCopia({ copia, desabilitado, onBaixar, onDispensar }: PropsPassoCopia) {
+  return (
+    <div className="grid gap-2 text-sm">
+      <p>Antes de substituir, baixe uma cópia dos dados atuais.</p>
+      <div>
+        <Button
+          variant="outline"
+          disabled={desabilitado || copia.situacao === 'copiando'}
+          onClick={onBaixar}
+        >
+          <DownloadIcon aria-hidden="true" />
+          Baixar cópia dos dados atuais
+        </Button>
+      </div>
+      {copia.situacao === 'baixada' && (
+        <p role="status">
+          Cópia baixada: <span className="font-medium break-all">{copia.nome}</span>. Confira se o
+          arquivo foi salvo antes de substituir.
+        </p>
+      )}
+      {copia.situacao === 'falhou' && (
+        <div role="alert" className="grid gap-2">
+          <p className="text-destructive font-medium">{MENSAGEM_FALHA_COPIA}</p>
+          <p>
+            Tente de novo ou siga sem cópia. Sem cópia, os dados atuais serão perdidos
+            definitivamente.
+          </p>
+          <div>
+            <Button variant="outline" disabled={desabilitado} onClick={onDispensar}>
+              Seguir sem cópia
+            </Button>
+          </div>
+        </div>
+      )}
+      {copia.situacao === 'dispensada' && (
+        <p role="status">Você escolheu seguir sem cópia dos dados atuais.</p>
+      )}
     </div>
   )
 }

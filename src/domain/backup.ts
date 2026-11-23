@@ -171,8 +171,23 @@ export async function calcularChecksum(texto: string): Promise<string> {
 }
 
 /** `study-manager-backup-YYYY-MM-DD-HHmm.json`, no fuso configurado (RN32). */
-export function nomeArquivoBackup(agora: Date, fuso: string): string {
-  return `study-manager-backup-${format(new TZDate(agora, fuso), 'yyyy-MM-dd-HHmm')}.json`
+/**
+ * `backup`: exportação comum. `antesDaRestauracao`: cópia dos dados atuais
+ * feita antes de restaurar (mesmo formato, também restaurável).
+ */
+export type TipoArquivoBackup = 'backup' | 'antesDaRestauracao'
+
+const PREFIXOS_ARQUIVO: Record<TipoArquivoBackup, string> = {
+  backup: 'study-manager-backup',
+  antesDaRestauracao: 'study-manager-antes-da-restauracao',
+}
+
+export function nomeArquivoBackup(
+  agora: Date,
+  fuso: string,
+  tipo: TipoArquivoBackup = 'backup',
+): string {
+  return `${PREFIXOS_ARQUIVO[tipo]}-${format(new TZDate(agora, fuso), 'yyyy-MM-dd-HHmm')}.json`
 }
 
 export interface ArquivoBackup {
@@ -193,6 +208,7 @@ export async function montarArquivoBackup(
   dados: DadosBackup,
   agora: Date,
   fuso: string,
+  tipo: TipoArquivoBackup = 'backup',
 ): Promise<ArquivoBackup> {
   const exportadoEm = agora.toISOString()
   const dadosFinais: DadosBackup = {
@@ -208,7 +224,7 @@ export async function montarArquivoBackup(
     dados: dadosFinais,
   }
   return {
-    nome: nomeArquivoBackup(agora, fuso),
+    nome: nomeArquivoBackup(agora, fuso, tipo),
     conteudo: `${JSON.stringify(envelope, null, 2)}\n`,
     exportadoEm,
   }

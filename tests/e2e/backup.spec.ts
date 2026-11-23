@@ -88,28 +88,46 @@ test('RF09: exportar e restaurar reproduz os dados; outra aba recarrega; arquivo
   await expect(page.getByRole('alert')).toContainText('o checksum não confere')
   await expect(page.getByRole('alertdialog')).toBeHidden()
 
-  // Restaurar (RN33): resumo, backup automático dos dados atuais, recarga das abas.
+  // Restaurar (RN33): resumo, cópia dos dados atuais por clique próprio, substituição.
   await escolherArquivo(page, backup.conteudo)
   const confirmacao = page.getByRole('alertdialog', { name: 'Restaurar este backup?' })
   await expect(confirmacao).toContainText('Isto substituirá todos os dados atuais.')
   await expect(confirmacao).toContainText('Objetivos1')
   await expect(confirmacao).toContainText('Matérias1')
+  const substituir = confirmacao.getByRole('button', { name: 'Substituir dados' })
+  await expect(substituir).toBeDisabled()
 
-  const seguranca = page.waitForEvent('download')
-  const recargaDaOutraAba = outraAba.waitForEvent('load')
-  const recargaPropria = page.waitForEvent('load')
-  await confirmacao.getByRole('button', { name: 'Substituir dados' }).click()
-  await expect(page.getByRole('alertdialog', { name: 'Backup restaurado' })).toBeVisible()
-  const atual = JSON.parse(await readFile(await (await seguranca).path(), 'utf8')) as {
+  const download = page.waitForEvent('download')
+  await confirmacao.getByRole('button', { name: 'Baixar cópia dos dados atuais' }).click()
+  const copia = await download
+  expect(copia.suggestedFilename()).toMatch(
+    /^study-manager-antes-da-restauracao-\d{4}-\d{2}-\d{2}-\d{4}\.json$/,
+  )
+  // O arquivo termina de ser gravado antes de qualquer substituição ou recarga.
+  const atual = JSON.parse(await readFile(await copia.path(), 'utf8')) as {
     dados: { objetivos: unknown[] }
   }
   expect(atual.dados.objetivos).toHaveLength(2)
+  await expect(substituir).toBeEnabled()
 
+  const recargaDaOutraAba = outraAba.waitForEvent('load')
+  await substituir.click()
+  const sucesso = page.getByRole('alertdialog', { name: 'Backup restaurado' })
+  await expect(sucesso).toBeVisible()
+
+  // A outra aba recarrega sozinha.
   await recargaDaOutraAba
   await expect(objetivo(outraAba, 'Polícia Federal')).toBeVisible()
   await expect(objetivo(outraAba, 'Carreira Fiscal')).toBeHidden()
 
-  // A própria aba recarrega sozinha depois de mostrar o sucesso.
+  // A própria aba não recarrega sozinha nem fecha o aviso por Esc ou clique fora.
+  await page.keyboard.press('Escape')
+  await page.mouse.click(5, 5)
+  await page.waitForTimeout(3000)
+  await expect(sucesso).toBeVisible()
+
+  const recargaPropria = page.waitForEvent('load')
+  await sucesso.getByRole('button', { name: 'Recarregar' }).click()
   await recargaPropria
   await page.getByRole('link', { name: 'Cadastro' }).first().click()
   await expect(objetivo(page, 'Polícia Federal')).toBeVisible()

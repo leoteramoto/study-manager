@@ -209,6 +209,9 @@ describe('nomeArquivoBackup', () => {
       'study-manager-backup-2026-11-21-2330.json',
     )
     expect(nomeArquivoBackup(agora, 'UTC')).toBe('study-manager-backup-2026-11-22-0230.json')
+    expect(nomeArquivoBackup(agora, 'America/Sao_Paulo', 'antesDaRestauracao')).toBe(
+      'study-manager-antes-da-restauracao-2026-11-21-2330.json',
+    )
   })
 })
 
