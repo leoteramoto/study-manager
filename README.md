@@ -61,7 +61,7 @@ O card **Cronômetro** fica na tela Principal. A sessão ativa aparece na barra 
 
 Em **Estatísticas** fica todo o histórico, separado por ano e por mês.
 
-- O seletor de **Ano** lista os anos com estudos e o ano atual. Cada ano tem as abas **Jan a Dez** e **Ano**. A tela abre no mês atual e, com o app aberto, acompanha a virada do mês; se você escolher outro mês, ele fica selecionado. Ao trocar de ano, a aba do mês é mantida.
+- O seletor de **Ano** lista os anos com estudos e o ano atual. Cada ano tem as abas **Jan a Dez** e **Ano**. A tela abre no mês atual (em tela estreita, a aba dele rola para ficar visível) e, com o app aberto, acompanha a virada do mês; se você escolher outro mês, ele fica selecionado. Ao trocar de ano, a aba do mês é mantida.
 - **Aba do mês:** o total do mês, o **Histórico** (data, início, término, tempo em minutos, matéria, origem e ações; do mais recente para o mais antigo, com os lançamentos manuais depois dos registros do cronômetro do mesmo dia) e o **Ranking** das matérias estudadas no mês, inclusive arquivadas.
 - **Aba Ano:** o total do ano, o total de cada um dos 12 meses e o tempo de cada matéria estudada no ano.
 - **Lançar estudo manual:** data (hoje ou antes, nunca no futuro, pelo fuso configurado), tempo de 1 a 480 minutos e uma matéria ativa de qualquer objetivo, mesmo fora do planejamento. O lançamento conta em todas as estatísticas e na tela Principal.
@@ -166,9 +166,9 @@ Os dados ficam só no navegador. **Faça backups com frequência**: se o navegad
 1. A restauração fica bloqueada enquanto houver uma sessão do cronômetro, em qualquer aba.
 2. O arquivo é conferido antes de qualquer alteração: tamanho (até 50 MB), formato, checksum SHA-256 (um arquivo alterado é recusado), versão e integridade dos dados (matérias, objetivos e registros que apontam uns para os outros, siglas e códigos únicos).
 3. O app mostra um resumo (data do backup e quantidade de objetivos, matérias e registros) e pede confirmação: **isto substituirá todos os dados atuais**.
-4. Antes de substituir, o app **baixa automaticamente um backup dos dados atuais**.
+4. Antes de substituir, clique em **Baixar cópia dos dados atuais**: o app baixa `study-manager-antes-da-restauracao-AAAA-MM-DD-HHmm.json`, no mesmo formato de um backup (também pode ser restaurado). **Substituir dados** só fica disponível depois disso. Se os dados atuais não puderem ser lidos, o app avisa e só deixa seguir com a confirmação **Seguir sem cópia**.
 5. Os dados são substituídos de uma vez só. Se algo falhar, nada é alterado.
-6. Depois do sucesso, o app recarrega. **As outras abas abertas também recarregam sozinhas**, para não ficarem com dados antigos na tela.
+6. Depois do sucesso, clique em **Recarregar**. O app não recarrega sozinho, para não interromper o download da cópia. **As outras abas abertas recarregam sozinhas**, para não ficarem com dados antigos na tela.
 
 **Endereço seguro:** o checksum usa a criptografia do navegador, que só funciona em `https` ou `localhost`. Aberto por `http` num IP da rede, o app avisa que o backup não está disponível.
 
