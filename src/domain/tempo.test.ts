@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  anoDaData,
   arredondarSemRuido,
+  dataValida,
   dataNoFuso,
   formatarDataCurta,
   formatarDataLonga,
@@ -9,6 +11,7 @@ import {
   formatarHoras,
   formatarHorasParaCima,
   formatarMinutos,
+  intervaloDoAno,
   intervaloDoMes,
   mesNoFuso,
 } from './tempo'
@@ -145,5 +148,26 @@ describe('formatarHoraNoFuso, formatarDataCurta e formatarDuracaoCurta', () => {
     expect(formatarDuracaoCurta(60)).toBe('1 min')
     expect(formatarDuracaoCurta(300.5)).toBe('5 min')
     expect(formatarDuracaoCurta(-3)).toBe('0 s')
+  })
+})
+
+describe('intervaloDoAno, anoDaData e dataValida', () => {
+  it('intervalo do ano vai de 1º de janeiro a 31 de dezembro', () => {
+    expect(intervaloDoAno(2026)).toEqual({ inicio: '2026-01-01', fim: '2026-12-31' })
+  })
+
+  it('lê o ano do texto da data', () => {
+    expect(anoDaData('2027-01-01')).toBe(2027)
+  })
+
+  it('aceita só datas de calendário que existem', () => {
+    expect(dataValida('2026-11-22')).toBe(true)
+    expect(dataValida('2028-02-29')).toBe(true)
+    expect(dataValida('2026-02-29')).toBe(false)
+    expect(dataValida('2026-13-01')).toBe(false)
+    expect(dataValida('2026-11-00')).toBe(false)
+    expect(dataValida('0050-01-01')).toBe(true)
+    expect(dataValida('2026-1-1')).toBe(false)
+    expect(dataValida('')).toBe(false)
   })
 })

@@ -48,6 +48,34 @@ export function intervaloDoMes({ ano, mes }: MesAno): IntervaloDatas {
   return { inicio: `${prefixo}-01`, fim: `${prefixo}-${doisDigitos(ultimoDia)}` }
 }
 
+/** Primeiro e último dia do ano, como datas de calendário. */
+export function intervaloDoAno(ano: number): IntervaloDatas {
+  const prefixo = String(ano).padStart(4, '0')
+  return { inicio: `${prefixo}-01-01`, fim: `${prefixo}-12-31` }
+}
+
+/** Ano de uma data `YYYY-MM-DD`, lido do texto (sem passar por `Date`). */
+export function anoDaData(data: string): number {
+  return Number(data.slice(0, 4))
+}
+
+/**
+ * Indica se o texto é uma data de calendário `YYYY-MM-DD` que existe
+ * (rejeita 2026-02-30). A conferência usa UTC, então não depende do fuso.
+ */
+export function dataValida(data: string): boolean {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data)
+  if (!partes) return false
+  const [ano, mes, dia] = [Number(partes[1]), Number(partes[2]), Number(partes[3])]
+  const instante = new Date(Date.UTC(ano, mes - 1, dia))
+  instante.setUTCFullYear(ano) // anos 0–99 não podem virar 1900–1999
+  return (
+    instante.getUTCFullYear() === ano &&
+    instante.getUTCMonth() === mes - 1 &&
+    instante.getUTCDate() === dia
+  )
+}
+
 /** "22 de novembro de 2026", a partir de uma data `YYYY-MM-DD`. */
 export function formatarDataLonga(data: string): string {
   const [ano = 0, mes = 1, dia = 1] = data.split('-').map(Number)
