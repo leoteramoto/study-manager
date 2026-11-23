@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button'
 
 interface Props {
   /** Ex.: "Matemática-PF em 22/11/2026, 45 min". */
@@ -35,7 +36,12 @@ export function ConfirmarExclusao({ descricao, onConfirmar, onFechar }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirmar}>Excluir</AlertDialogAction>
+          <AlertDialogAction
+            className={buttonVariants({ variant: 'destructive' })}
+            onClick={onConfirmar}
+          >
+            Excluir
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

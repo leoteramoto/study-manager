@@ -79,6 +79,15 @@ test('fluxo completo: iniciar, fim do tempo, confirmar e ver na Principal', asyn
   const linha = page.getByRole('table').getByRole('row').filter({ hasText: 'Matemática-PF' })
   await expect(linha.getByRole('cell').nth(4)).toHaveText('2')
   await expect(page.getByRole('button', { name: 'Iniciar' })).toBeVisible()
+
+  // Fecha o fluxo da Fase 6: o registro confirmado aparece nas Estatísticas.
+  await page.getByRole('link', { name: 'Estatísticas' }).first().click()
+  const historico = page.getByRole('table', { name: 'Histórico de estudos do mês' })
+  const registro = historico.getByRole('row').nth(1)
+  await expect(registro).toContainText('Matemática-PF')
+  await expect(registro).toContainText('Cronômetro')
+  await expect(registro).toContainText('Concluído')
+  await expect(page.getByRole('table').filter({ hasText: 'Tempo total' })).toContainText('0h02')
 })
 
 test('fechar e reabrir a aba mostra a sessão interrompida', async ({ page }) => {
