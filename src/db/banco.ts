@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { VERSAO_SCHEMA } from '@/domain/backup'
 import type {
   Configuracoes,
   ItemPlanejamento,
@@ -9,7 +10,8 @@ import type {
 } from './tipos'
 
 export const NOME_BANCO = 'study-manager'
-export const SCHEMA_VERSION = 1
+/** Versão do formato dos dados, a mesma do arquivo de backup (RN32). */
+export const SCHEMA_VERSION = VERSAO_SCHEMA
 
 export type BancoStudyManager = Dexie & {
   objetivos: EntityTable<Objetivo, 'id'>
