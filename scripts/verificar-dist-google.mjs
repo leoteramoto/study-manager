@@ -34,6 +34,7 @@ const CSP_COM_GOOGLE = CSP_SEM_GOOGLE.replace(
 )
 
 const DOMINIOS = ['accounts.google.com', 'googleapis.com']
+const URL_GIS = 'https://accounts.google.com/gsi/client'
 const TEXTO = /\.(html|js|mjs|css|json|webmanifest|txt|svg)$/
 
 function construir(clientId) {
@@ -91,6 +92,20 @@ const comGoogle = construir('verificacao.apps.googleusercontent.com')
 try {
   const csp = lerCsp(comGoogle)
   if (csp !== CSP_COM_GOOGLE) problemas.push(`Com a variável, a CSP não é a esperada:\n  ${csp}`)
+  // O código do destino real existe, mas fora do bundle inicial (import dinâmico).
+  const html = readFileSync(join(comGoogle, 'index.html'), 'utf8')
+  const scripts = arquivos(comGoogle).filter((c) => /\.m?js$/.test(c))
+  const doGoogle = scripts.filter((c) => {
+    const conteudo = readFileSync(c, 'utf8')
+    return conteudo.includes('https://www.googleapis.com') && conteudo.includes(URL_GIS)
+  })
+  if (doGoogle.length === 0) {
+    problemas.push('Com a variável, nenhum chunk traz o código do Google Drive.')
+  }
+  for (const chunk of doGoogle) {
+    const nome = chunk.slice(comGoogle.length + 1)
+    if (html.includes(nome)) problemas.push(`Com a variável, ${nome} está no bundle inicial.`)
+  }
 } finally {
   rmSync(comGoogle, { recursive: true, force: true })
 }
@@ -99,4 +114,6 @@ if (problemas.length > 0) {
   console.error(problemas.join('\n'))
   process.exit(1)
 }
-console.log('dist sem Google sem a variável; CSP correta com e sem a variável.')
+console.log(
+  'Sem a variável: dist sem Google e CSP de antes. Com a variável: CSP com o Google e código do Drive num chunk carregado sob demanda.',
+)

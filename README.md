@@ -186,6 +186,12 @@ Além do backup em arquivo, o app pode enviar cópias automáticas para uma past
 
 O app só pede o escopo `drive.file`: ele enxerga apenas a pasta e os arquivos que ele mesmo criou, e nada mais do seu Drive.
 
+**Em Configurações → Google Drive:** **Conectar ao Google Drive** (o Google pede a conta e a autorização, e o primeiro backup é enviado na hora), a conta conectada, a data do último envio, a situação (em dia, pendente ou erro), **Fazer backup agora** e **Desconectar**. Desconectar não apaga nada no Drive: os backups continuam na pasta.
+
+- Se o envio ficar pendente sem autorização do Google nesta aba (por exemplo, depois de reabrir o app), o cabeçalho mostra **Reconectar Google Drive**.
+- Se os dados deste navegador tiverem menos registros que o último backup no Drive (por exemplo, num navegador novo), o envio automático é suspenso para não sobrescrever o backup bom, e o cabeçalho mostra **Backup no Drive suspenso**. Nesse caso, restaure o backup do Drive ou, se for mesmo o que você quer, use **Fazer backup agora** e confirme.
+- O lembrete de backup considera também o último envio ao Drive.
+
 Para o recurso existir, o build precisa de um **ID do cliente OAuth** do Google, na variável `VITE_GOOGLE_CLIENT_ID`. Sem ela, a seção do Google Drive não aparece e o app funciona como antes.
 
 ### Guia de configuração do Google Cloud (uma vez só)

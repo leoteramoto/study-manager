@@ -133,10 +133,19 @@ const conexaoPadrao: MonitorConexao = {
   },
 }
 
+/** Fila da própria aba, para navegadores sem Web Locks (e o jsdom). */
+let filaLocal: Promise<unknown> = Promise.resolve()
+
+function comFilaLocal<T>(funcao: () => Promise<T>): Promise<T> {
+  const resultado = filaLocal.then(funcao)
+  filaLocal = resultado.catch(() => undefined)
+  return resultado
+}
+
 const comLockPadrao: ComLock = (funcao) =>
   typeof navigator !== 'undefined' && 'locks' in navigator
     ? navigator.locks.request(NOME_LOCK_NUVEM, funcao)
-    : funcao()
+    : comFilaLocal(funcao)
 
 function observarEstadoPadrao(ouvinte: (estado: EstadoNuvem) => void): () => void {
   const assinatura = liveQuery(() => obterEstadoNuvem()).subscribe({ next: ouvinte })

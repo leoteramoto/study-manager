@@ -4,20 +4,33 @@ import { AvisoErro } from '@/components/AvisoErro'
 import { Button } from '@/components/ui/button'
 import { obterConfiguracoes } from '@/db/configuracoesRepositorio'
 import { DIAS_LEMBRETE_BACKUP, precisaLembreteBackup } from '@/domain/backup'
+import { ultimoBackupConsiderado } from '@/domain/backupNuvem'
 import { formatarDataHoraNoFuso } from '@/domain/tempo'
+import { useEstadoNuvem } from '@/features/nuvem/useNuvem'
 import { useAgora } from '@/lib/useAgora'
 import { useExportarBackup } from './useExportarBackup'
 
-/** Faixa discreta no topo quando o backup está atrasado (RN34). Não pode ser dispensada. */
+/**
+ * Faixa discreta no topo quando o backup está atrasado (RN34). Não pode ser
+ * dispensada. Considera também o último envio ao Google Drive (RN50); o botão
+ * continua só baixando o arquivo.
+ */
 export function LembreteBackup() {
   const configuracoes = useLiveQuery(obterConfiguracoes)
+  const estadoNuvem = useEstadoNuvem()
   const agora = useAgora()
   const { exportar, exportando, erro, limparErro } = useExportarBackup()
 
-  if (!configuracoes || !precisaLembreteBackup(configuracoes.ultimoBackupEm, agora)) return null
+  // Com o recurso do Drive ligado, espera o estado da nuvem para não piscar.
+  if (!configuracoes || estadoNuvem === undefined) return null
+  const ultimo = ultimoBackupConsiderado(
+    configuracoes.ultimoBackupEm,
+    estadoNuvem?.ultimoEnvioEm ?? null,
+  )
+  if (!precisaLembreteBackup(ultimo, agora)) return null
 
-  const texto = configuracoes.ultimoBackupEm
-    ? `Seu último backup foi em ${formatarDataHoraNoFuso(configuracoes.ultimoBackupEm, configuracoes.fusoHorario)}, há mais de ${DIAS_LEMBRETE_BACKUP} dias.`
+  const texto = ultimo
+    ? `Seu último backup foi em ${formatarDataHoraNoFuso(ultimo, configuracoes.fusoHorario)}, há mais de ${DIAS_LEMBRETE_BACKUP} dias.`
     : 'Você ainda não fez nenhum backup dos seus dados.'
 
   return (

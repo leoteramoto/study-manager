@@ -21,7 +21,9 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npx vite preview --port ${PORTA} --strictPort`,
     // Ticks do cronômetro na thread principal, para o page.clock controlar o tempo.
-    env: { VITE_FONTE_TICKS: 'principal' },
+    // VITE_GOOGLE_CLIENT_ID vazio: o E2E nunca usa o Client ID de um .env.local
+    // nem carrega o script do Google (a variável do processo tem prioridade).
+    env: { VITE_FONTE_TICKS: 'principal', VITE_GOOGLE_CLIENT_ID: '' },
     url: `http://localhost:${PORTA}/`,
     reuseExistingServer: false,
     timeout: 120_000,
