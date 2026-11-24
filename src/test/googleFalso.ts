@@ -84,6 +84,91 @@ export function json(corpo: unknown, status = 200, cabecalhos: Record<string, st
   })
 }
 
+// ---------------------------------------------------------------------------
+// Parâmetro `fields` da API do Drive
+// ---------------------------------------------------------------------------
+
+type Selecao = { [campo: string]: Selecao | true }
+
+/** Lê `nextPageToken,files(id,name)` como árvore de campos. */
+export function analisarCampos(texto: string): Selecao {
+  let posicao = 0
+  function lista(): Selecao {
+    const selecao: Selecao = {}
+    while (posicao < texto.length && texto[posicao] !== ')') {
+      let nome = ''
+      while (posicao < texto.length && !',()'.includes(texto[posicao] ?? '')) {
+        nome += texto.charAt(posicao)
+        posicao++
+      }
+      if (texto[posicao] === '(') {
+        posicao++
+        selecao[nome.trim()] = lista()
+        posicao++ // ')'
+      } else {
+        selecao[nome.trim()] = true
+      }
+      if (texto[posicao] === ',') posicao++
+    }
+    return selecao
+  }
+  return lista()
+}
+
+function aplicarCampos(valor: unknown, selecao: Selecao): unknown {
+  if (Array.isArray(valor)) return valor.map((item) => aplicarCampos(item, selecao))
+  if (typeof valor !== 'object' || valor === null) return valor
+  const resultado: Record<string, unknown> = {}
+  for (const [campo, sub] of Object.entries(selecao)) {
+    if (!(campo in valor)) continue
+    const interno: unknown = Reflect.get(valor, campo)
+    resultado[campo] = sub === true ? interno : aplicarCampos(interno, sub)
+  }
+  return resultado
+}
+
+/** Sem `fields`, o Drive devolve só `kind`, `id`, `name` e `mimeType` de cada arquivo. */
+function padraoArquivo(valor: unknown): unknown {
+  if (typeof valor !== 'object' || valor === null) return valor
+  return {
+    kind: 'drive#file',
+    ...(aplicarCampos(valor, { id: true, name: true, mimeType: true }) as object),
+  }
+}
+
+function camposPadrao(corpo: unknown): unknown {
+  if (typeof corpo !== 'object' || corpo === null) return corpo
+  const arquivos: unknown = Reflect.get(corpo, 'files')
+  if (Array.isArray(arquivos)) {
+    const proxima: unknown = Reflect.get(corpo, 'nextPageToken')
+    return {
+      kind: 'drive#fileList',
+      ...(proxima === undefined ? {} : { nextPageToken: proxima }),
+      files: arquivos.map(padraoArquivo),
+    }
+  }
+  return 'id' in corpo ? padraoArquivo(corpo) : corpo
+}
+
+/**
+ * Como o Drive: respostas de sucesso em JSON trazem só os campos pedidos em
+ * `fields` e, sem `fields`, o conjunto padrão. A URL da sessão de upload não
+ * traz `fields`, então o envio do conteúdo recebe o conjunto padrão (pior caso:
+ * a documentação não garante que o `fields` da abertura da sessão valha aqui).
+ */
+async function respeitarCampos(url: string, resposta: Response): Promise<Response> {
+  if (!url.startsWith('https://www.googleapis.com/') || !resposta.ok) return resposta
+  if (!resposta.headers.get('Content-Type')?.includes('application/json')) return resposta
+  const corpo: unknown = await resposta.json()
+  const campos = new URL(url).searchParams.get('fields')
+  const filtrado =
+    campos === null ? camposPadrao(corpo) : aplicarCampos(corpo, analisarCampos(campos))
+  return new Response(JSON.stringify(filtrado), {
+    status: resposta.status,
+    headers: resposta.headers,
+  })
+}
+
 /** `fetch` falso com rotas por método e URL; grava todas as chamadas. */
 export function criarFetchFalso() {
   const rotas: Rota[] = []
@@ -111,7 +196,7 @@ export function criarFetchFalso() {
       return Promise.resolve(json({ error: 'rota não configurada' }, 599))
     }
     if (resposta === 'rede') return Promise.reject(new TypeError('Failed to fetch'))
-    return Promise.resolve(typeof resposta === 'function' ? resposta() : resposta)
+    return respeitarCampos(url, typeof resposta === 'function' ? resposta() : resposta)
   }
 
   return {

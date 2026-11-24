@@ -125,6 +125,18 @@ export function interpretarArquivoDrive(resposta: unknown): ArquivoDrive | null 
   return resultado.success ? resultado.data : null
 }
 
+const esquemaIdArquivo = z.object({ id: idDrive })
+
+/**
+ * Resposta do envio do conteúdo (upload resumable): só o `id` é exigido. A
+ * documentação não garante que o `fields` da abertura da sessão valha para a
+ * resposta final; sem ele, o Drive devolve só `kind`, `id`, `name` e `mimeType`.
+ */
+export function interpretarIdArquivo(resposta: unknown): string | null {
+  const resultado = esquemaIdArquivo.safeParse(resposta)
+  return resultado.success ? resultado.data.id : null
+}
+
 export interface PaginaArquivos {
   arquivos: ArquivoDrive[]
   proximaPagina: string | null

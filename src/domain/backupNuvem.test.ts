@@ -26,6 +26,7 @@ import {
   interpretarArquivoDrive,
   interpretarBackupsDaPasta,
   interpretarEmail,
+  interpretarIdArquivo,
   interpretarListaArquivos,
   interpretarRespostaToken,
   MARGEM_EXPIRACAO_TOKEN_MS,
@@ -186,6 +187,21 @@ describe('arquivos da API', () => {
     ['texto', 'arquivo'],
   ])('recusa %s', (_caso, resposta) => {
     expect(interpretarArquivoDrive(resposta)).toBeNull()
+  })
+
+  it('resposta do upload: basta o id (conjunto padrão do Drive)', () => {
+    expect(
+      interpretarIdArquivo({
+        kind: 'drive#file',
+        id: 'abc_1',
+        name: 'x.json',
+        mimeType: 'application/json',
+      }),
+    ).toBe('abc_1')
+    expect(interpretarIdArquivo({ id: 'abc_1' })).toBe('abc_1')
+    expect(interpretarIdArquivo({ id: '../x' })).toBeNull()
+    expect(interpretarIdArquivo({})).toBeNull()
+    expect(interpretarIdArquivo(null)).toBeNull()
   })
 
   it('descarta itens inválidos da lista, um a um', () => {

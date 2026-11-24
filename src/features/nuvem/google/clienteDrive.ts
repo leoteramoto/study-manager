@@ -16,6 +16,7 @@ import {
   interpretarArquivoDrive,
   interpretarBackupsDaPasta,
   interpretarEmail,
+  interpretarIdArquivo,
   interpretarListaArquivos,
   MARCA_PASTA,
   MIME_BACKUP,
@@ -135,9 +136,10 @@ export class ClienteDrive {
           appProperties: dados.appProperties,
         }
       : { name: dados.nome, appProperties: dados.appProperties }
+    // fields=id: a resposta final só precisa do id (ver `interpretarIdArquivo`).
     const endereco = criar
-      ? `${UPLOAD}?uploadType=resumable`
-      : `${UPLOAD}/${encodeURIComponent(dados.idExistente ?? '')}?uploadType=resumable`
+      ? `${UPLOAD}?uploadType=resumable&fields=id`
+      : `${UPLOAD}/${encodeURIComponent(dados.idExistente ?? '')}?uploadType=resumable&fields=id`
 
     const sessao = await this.requisitar('sessao-upload', endereco, {
       method: criar ? 'POST' : 'PATCH',
@@ -152,7 +154,7 @@ export class ClienteDrive {
       throw new ErroNuvem('falha', 'sessao-upload: endereço de upload inválido')
     }
 
-    const enviado = interpretarArquivoDrive(
+    const enviado = interpretarIdArquivo(
       await this.lerJson(
         'upload',
         await this.requisitar('upload', local, {
