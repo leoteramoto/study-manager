@@ -397,6 +397,7 @@ Table `estado` (at most one row, `id = 'drive'`):
 | email | string \| null | Connected account, from the Drive API; shown in Settings and used as `login_hint` |
 | pastaId | string \| null | ID of the "Study Manager" folder created by the app |
 | ultimoEnvioEm | ISO string \| null | Last **successful** upload |
+| ultimoGatilhoEm | ISO string \| null | Last upload trigger (RN43). An upload that started before it does not set `situacao = 'ok'` (the data sent may be outdated) |
 | situacao | `'ok' \| 'pendente' \| 'erro'` | Current state |
 | mensagemErro | string \| null | User-facing message (Portuguese, no technical details) when `situacao = 'erro'` |
 | motivoErro | `'suspenso' \| 'falha'` \| null | `'suspenso'`: automatic upload suspended by RN45; `'falha'`: any other error. Null unless `situacao = 'erro'` |
