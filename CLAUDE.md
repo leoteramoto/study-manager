@@ -43,6 +43,7 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 ## Convenções
 - Identificadores em português, sem acentos (`calcularMetaIndividual`). PascalCase em componentes, um componente por arquivo.
 - Sem `any`. Sem `dangerouslySetInnerHTML`, `eval` ou CDNs externas.
+  - **Única exceção (Fase 7):** o script do Google Identity Services, `https://accounts.google.com/gsi/client`. O Google só permite carregá-lo dessa URL (não aceita empacotar nem hospedar cópia), por isso só esse arquivo. Ele entra na CSP só quando `VITE_GOOGLE_CLIENT_ID` existe no build e é carregado sob demanda: Client ID presente **e** clique em "Conectar" ou estado já conectado. Nunca é carregado na abertura do app, nos testes unitários nem no build E2E (RN41, RN51).
 - Commits pequenos no padrão Conventional Commits, em português (`feat(cronometro): ...`).
 - Datas-hora gravadas em ISO UTC; datas de calendário em `YYYY-MM-DD`, calculadas no fuso configurado.
 

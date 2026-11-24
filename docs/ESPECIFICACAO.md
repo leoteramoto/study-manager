@@ -307,7 +307,7 @@ Use Dexie schema versioning (`db.version(n).stores(...).upgrade(...)`) from vers
 - **Accessibility:** full keyboard navigation, visible focus, labels on every field, AA contrast in both themes.
 - **Language:** Brazilian Portuguese, with numbers formatted as `1.234,5`.
 - **Error handling:** friendly messages, no stack traces for the user; detailed errors only in the `console` in development mode.
-- **Privacy:** no data leaves the device. No analytics, no trackers, no network calls other than loading the app itself.
+- **Privacy:** no data leaves the device. No analytics, no trackers, no network calls other than loading the app itself. **Exception (Phase 7):** the optional Google Drive backup, which only runs after the user connects their own Google account (see "Phase 7 addendum").
 
 ## Interface
 
@@ -330,11 +330,13 @@ All UI text in Brazilian Portuguese.
 - Never use `dangerouslySetInnerHTML` or `eval`. User text is rendered as plain text only.
 - Include a restrictive Content-Security-Policy via `<meta>` (`default-src 'self'`, no external scripts).
 - Pin dependency versions and run `npm audit` in CI. No external CDNs; everything is bundled at build time.
+- **Single exception (Phase 7):** the Google Identity Services script `https://accounts.google.com/gsi/client`. Google only supports loading it from that URL ("self-hosting or bundling an offline copy of the script is not supported"), so it cannot be bundled. It is allowed in the CSP only when `VITE_GOOGLE_CLIENT_ID` is set at build time, and loaded only on demand (RN41). No other external script is allowed.
 - Never log the content of user data.
 
 ## Environment variables
 
 - `VITE_BASE_PATH`: deploy base path (e.g. `/study-manager/` on GitHub Pages; `/` locally). Ship a `.env.example` with this value.
+- `VITE_GOOGLE_CLIENT_ID` (Phase 7, optional): OAuth client ID of type "Web application". It is public by nature (it is sent to the browser in every authorization request), so in CI it is a repository **variable**, not a secret. When it is missing, the Google Drive backup does not exist in the build.
 
 ## Implementation plan
 
@@ -370,6 +372,80 @@ Build **one phase at a time**. At the end of each phase, run lint, tests and bui
 - Playwright E2E tests of the flows: register → plan → time a session → confirm → see it in the statistics; session recovery; backup and restore.
 - Accessibility and responsiveness review, and the final README.
 - *Acceptance:* the criteria of RF09 and the full Definition of done.
+
+### Phase 7 – Google Drive backup
+- RF11 and RN40–RN52, as described in "Phase 7 addendum" below.
+- *Acceptance:* the criteria of RF11.
+
+## Phase 7 addendum: automatic backup to Google Drive
+
+Added after the MVP, at the user's request. It does **not** change the manual file backup (RN32–RN36), which keeps working exactly as before.
+
+**What it is:** besides the file backup, the app sends automatic copies of the data to a folder in the user's own Google Drive, and can restore from them. The app stays **local-first**: Drive is only a backup destination. There is **no sync**: data is never merged, and nothing is read from Drive except when the user restores a backup. The "Cloud sync with login" item in "Later" remains out of scope.
+
+**Opt-in:** nothing is sent to Google until the user clicks "Conectar" in Settings.
+
+### Cloud state database
+The Drive state lives in a **separate Dexie database**, `study-manager-nuvem`, version 1. The main database (`study-manager`) is **not** changed and keeps its version, so an older app version can still open it (RN36).
+
+Table `estado` (at most one row, `id = 'drive'`):
+
+| Field | Type | Rule |
+|---|---|---|
+| id | `'drive'` | |
+| conectado | boolean | `true` after a successful "Conectar"; `false` after "Desconectar" |
+| email | string \| null | Connected account, from the Drive API; shown in Settings and used as `login_hint` |
+| pastaId | string \| null | ID of the "Study Manager" folder created by the app |
+| ultimoEnvioEm | ISO string \| null | Last **successful** upload |
+| situacao | `'ok' \| 'pendente' \| 'erro'` | Current state |
+| mensagemErro | string \| null | User-facing message (Portuguese, no technical details) when `situacao = 'erro'` |
+| registrosUltimoEnvio | number \| null | Total number of records (including soft-deleted) in the last successful upload, or in the last restored backup (RN45) |
+
+This database is **not** part of the backup file, survives a restore (RN33) and is only cleared by "Desconectar". The access token is **never** stored in it (RN41).
+
+### Rules
+- **RN40 (availability):** the feature exists only when `VITE_GOOGLE_CLIENT_ID` is set at build time. Without it, the Settings section, the indicator (RN49) and the Google CSP entries (RN51) do not exist, and the app works exactly as before.
+- **RN41 (authorization):**
+  - Google Identity Services (GIS) **token model**, entirely in the browser: no backend, no client secret, no refresh token. The **only** scope is `https://www.googleapis.com/auth/drive.file` (the app only sees the files and folders it created).
+  - The GIS script is loaded **on demand only**: client ID present **and** (the user clicks "Conectar" **or** the state says `conectado` and a token is needed). It is never loaded at app start, in unit tests or in the E2E build.
+  - The access token lives **only in memory**, per tab. It is never written to `localStorage`, IndexedDB, logs or the URL. After a reload, a new tab or expiry (about 1 h, per `expires_in`, with a safety margin), there is no token.
+  - A new token is requested with `requestAccessToken({ prompt: '', login_hint: email })`. Since browsers only allow popups right after a click, it is called **synchronously inside the click handler**, before any `await`. Popup blocked (`popup_failed_to_open`), closed (`popup_closed`) or with no answer within 2 minutes only leaves the backup as `pendente`; a token that arrives after the time limit is still used.
+- **RN42 (local action never waits):** confirming a timer session and saving, editing or deleting a manual entry always happen locally, whatever happens with Google. The token request runs **in parallel** with the local action, and no failure from Google (popup, network, API) blocks, delays or undoes it.
+- **RN43 (when to upload):**
+  - Triggers: Confirmar of a timer session (RN21); saving, editing or deleting a manual entry (RN30, RN31); the "Fazer backup agora" button of the Google Drive section. Only while `conectado`.
+  - On each trigger, `situacao = 'pendente'` is written to the cloud database **immediately**, so a pending upload is still visible if the tab closes before the upload.
+  - Automatic triggers are **grouped**: the upload happens 5 s after the last trigger. "Fazer backup agora" uploads at once.
+  - Uploads from several tabs are serialized by a Web Lock (`study-manager:nuvem`).
+  - No token: stays `pendente` and shows the indicator (RN49). Offline: stays `pendente` and retries when the `online` event fires, if the tab still has a valid token. API failure: `situacao = 'erro'` with a friendly message.
+  - Success: `situacao = 'ok'`, `ultimoEnvioEm` and `registrosUltimoEnvio` updated.
+- **RN44 (content):** the uploaded content is produced by the same `gerarBackup` as the manual export: exactly the RN32 format (with checksum), validated before leaving. If validation fails, nothing is uploaded and `situacao = 'erro'`. Uploading to Drive does **not** change `configuracoes.ultimoBackupEm` locally (the file itself carries `ultimoBackupEm = exportadoEm`, as in RN32).
+- **RN45 (protection against overwriting a good backup):** since records are only soft-deleted, the total number of records (including soft-deleted) does not decrease in normal use.
+  - Before each **automatic** upload, if the current total is **lower** than `registrosUltimoEnvio`, nothing is sent and `situacao = 'erro'` with the message: "Os dados deste navegador têm menos registros que o último backup no Drive. O envio automático foi suspenso para não sobrescrever o backup."
+  - In that case, "Fazer backup agora" asks for explicit confirmation before uploading.
+  - With `registrosUltimoEnvio = null` (first upload after connecting) there is no comparison.
+  - After any successful restore (from a file or from Drive), `registrosUltimoEnvio` becomes the total of the restored data.
+- **RN46 (files and retention):**
+  - Folder "Study Manager" in the root of the user's Drive, created by the app and marked with `appProperties`. It is found by `pastaId`; if it no longer exists or is in the trash, it is searched by its mark and, if not found, created again.
+  - **One file per day:** `study-manager-backup-YYYY-MM-DD.json`, with the day in the configured time zone at upload time. Later uploads on the same day **overwrite** that day's file. Files are marked with `appProperties` (app mark, day and a summary: export time and number of goals, subjects and records).
+  - **Retention:** the 30 most recent days are kept. Older files created by the app are moved to the **trash** (`trashed: true`), never deleted permanently. Files not created by the app are never touched.
+- **RN47 (restore from Drive):**
+  - "Restaurar do Google Drive" lists the app's backups in the folder, newest first, with date/time and the summary from `appProperties`. That summary is untrusted data: it is validated before display and shown only as information.
+  - The chosen file is downloaded (size ≤ 50 MB, checked from the metadata before downloading and again on the text) and goes through **exactly** the RN33 flow: blocked with an active session, `validarArquivoBackup`, summary computed from the validated file, confirmation, copy of the current data, replacement in one transaction, "Recarregar". No shortcut skips validation or the copy.
+- **RN48 (Settings):** a "Google Drive" section with:
+  - "Conectar" / "Desconectar"; connected e-mail; date/time of the last successful upload; state (ok / pendente / erro, with the message); "Fazer backup agora"; "Restaurar do Google Drive".
+  - "Desconectar" revokes the token (when the tab has one), clears the cloud database and **deletes nothing in Drive**. The screen says so explicitly.
+- **RN49 (indicator):** while `conectado` and `pendente` with no valid token in the tab, a discreet header indicator "Reconectar Google Drive" is shown. Clicking it requests the token (it is a click, so the popup is allowed) and uploads.
+- **RN50 (reminder):** RN34 now uses the most recent of `configuracoes.ultimoBackupEm` and `ultimoEnvioEm`. The reminder's "Fazer backup agora" keeps downloading the file only.
+- **RN51 (security):**
+  - CSP entries are added **only** when `VITE_GOOGLE_CLIENT_ID` is set at build time: `script-src https://accounts.google.com/gsi/client` (the GIS library, that single file); `connect-src https://accounts.google.com/gsi/` (GIS internal calls, as recommended by Google) and `https://www.googleapis.com` (Drive API: metadata, upload, download). Any other entry (e.g. `frame-src`) is added only if a real test proves it necessary, with the reason recorded.
+  - Never log the token or backup content.
+  - Every API response is untrusted data: validated with Zod before use.
+  - Error messages in Portuguese, with no technical details (detailed errors only in the console in development mode).
+- **RN52 (testability):** Drive access lives behind an interface (`DestinoBackupNuvem`) with a real implementation (GIS + Drive REST API through `fetch`) and a fake one (in memory). Unit and E2E tests use only the fake one or fake `fetch`/`google` objects; **no test reaches Google**. The fake implementation never reaches the production `dist/`.
+
+### RF11 – Google Drive backup
+- RN40 to RN52.
+- *Acceptance:* without `VITE_GOOGLE_CLIENT_ID` nothing changes; confirming a session works normally with the popup blocked, closed or unanswered, leaving the backup `pendente`; several triggers within 5 s produce one upload; a pending state written before closing the tab is shown after reopening; fewer records than the last upload suspends automatic uploads; a 31st day moves the oldest file to the trash; restoring from Drive goes through validation and the copy of current data; "Desconectar" deletes nothing in Drive.
 
 ## Tests
 

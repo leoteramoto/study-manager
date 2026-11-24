@@ -10,14 +10,15 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 
 ## Situação
 
-| Fase | Conteúdo                                        | Situação  |
-| ---- | ----------------------------------------------- | --------- |
-| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
-| 2    | Cadastro de objetivos e matérias                | Concluída |
-| 3    | Planejamento e tela Principal                   | Concluída |
-| 4    | Cronômetro                                      | Concluída |
-| 5    | Estatísticas e lançamentos manuais              | Concluída |
-| 6    | Backup, configurações e acabamento              | Concluída |
+| Fase | Conteúdo                                        | Situação     |
+| ---- | ----------------------------------------------- | ------------ |
+| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída    |
+| 2    | Cadastro de objetivos e matérias                | Concluída    |
+| 3    | Planejamento e tela Principal                   | Concluída    |
+| 4    | Cronômetro                                      | Concluída    |
+| 5    | Estatísticas e lançamentos manuais              | Concluída    |
+| 6    | Backup, configurações e acabamento              | Concluída    |
+| 7    | Backup automático no Google Drive (opcional)    | Em andamento |
 
 ## Como usar
 
@@ -176,6 +177,105 @@ Os dados ficam só no navegador. **Faça backups com frequência**: se o navegad
 
 - **Banco corrompido ou que não abre:** **Tentar novamente** ou **Restaurar de um backup**. Nesse caso não dá para fazer backup dos dados atuais antes, porque eles não podem ser lidos. O banco é apagado e recriado com o backup, só depois da sua confirmação.
 - **Dados gravados por uma versão mais nova do app:** só **Recarregar**, para receber a versão atual. Nada é apagado.
+
+## Backup no Google Drive (opcional)
+
+> Em implementação (Fase 7). As regras estão na seção "Phase 7 addendum" da [especificação](docs/ESPECIFICACAO.md).
+
+Além do backup em arquivo, o app pode enviar cópias automáticas para uma pasta **Study Manager** no seu Google Drive. O Drive é só um destino de backup: os dados continuam no navegador e nada é sincronizado. Nada é enviado antes de você clicar em **Conectar**.
+
+O app só pede o escopo `drive.file`: ele enxerga apenas a pasta e os arquivos que ele mesmo criou, e nada mais do seu Drive.
+
+Para o recurso existir, o build precisa de um **ID do cliente OAuth** do Google, na variável `VITE_GOOGLE_CLIENT_ID`. Sem ela, a seção do Google Drive não aparece e o app funciona como antes.
+
+### Guia de configuração do Google Cloud (uma vez só)
+
+Você precisa de uma conta Google. O Google Cloud não cobra nada por isso: a Google Drive API é gratuita e não é preciso cadastrar cartão.
+
+**1. Criar o projeto**
+
+1. Abra o [Google Cloud Console](https://console.cloud.google.com/) e entre com a sua conta.
+2. No topo da página, clique no seletor de projetos e depois em **Novo projeto**.
+3. Em **Nome do projeto**, escreva `Study Manager` e clique em **Criar**.
+4. Quando o projeto for criado, selecione-o no seletor de projetos. Confira que o nome dele aparece no topo antes de seguir.
+
+**2. Ativar a Google Drive API**
+
+1. No menu (☰), vá em **APIs e serviços → Biblioteca**.
+2. Pesquise `Google Drive API`, abra o resultado e clique em **Ativar**.
+
+**3. Configurar a tela de consentimento**
+
+É a tela que o Google mostra quando você clica em **Conectar** no app. No console ela fica em **Google Auth Platform**. Para chegar lá, vá no menu em **APIs e serviços → Tela de permissão OAuth**, ou pesquise "Google Auth Platform" na barra de busca.
+
+1. Clique em **Começar**.
+2. **Informações do app:** nome do app `Study Manager` e, em **E-mail para suporte do usuário**, o seu e-mail. Clique em **Próxima**.
+3. **Público:** escolha **Externo** e clique em **Próxima**. "Interno" só existe para contas de empresa do Google Workspace.
+4. **Informações de contato:** o seu e-mail. Clique em **Próxima**.
+5. Aceite a política de dados de usuário e clique em **Criar**.
+6. Não envie logotipo. Com logotipo, o Google exige a verificação da marca.
+
+**4. Deixar o app em modo Teste e cadastrar você como usuário de teste**
+
+1. Em **Google Auth Platform**, abra **Público**.
+2. Confira que o **Status de publicação** é **Em teste**.
+3. Em **Usuários de teste**, clique em **Adicionar usuários**, digite o seu e-mail (o da conta Google em que os backups vão ficar) e salve.
+
+No modo Teste, só os usuários dessa lista conseguem conectar (até 100). Veja abaixo como funciona a expiração de 7 dias.
+
+**5. Autorizar o escopo `drive.file`**
+
+1. Em **Google Auth Platform**, abra **Acesso a dados**.
+2. Clique em **Adicionar ou remover escopos**.
+3. No filtro, digite `drive.file` e marque `https://www.googleapis.com/auth/drive.file`. A descrição é "Consultar, editar, criar e excluir apenas os arquivos do Google Drive que você usa com este app".
+4. Clique em **Atualizar** e depois em **Salvar**. O escopo deve aparecer na lista de **escopos não sensíveis**.
+
+**6. Criar o ID do cliente OAuth**
+
+1. Em **Google Auth Platform**, abra **Clientes** e clique em **Criar cliente**.
+2. Em **Tipo de aplicativo**, escolha **Aplicativo da Web**. Em **Nome**, escreva, por exemplo, `Study Manager (web)`.
+3. Em **Origens JavaScript autorizadas**, clique em **Adicionar URI** duas vezes e preencha:
+   - `http://localhost:5173` (servidor de desenvolvimento, `npm run dev`)
+   - `http://localhost:4173` (build de produção local, `npm run preview`)
+
+   Escreva só o endereço, **sem barra no final e sem caminho**.
+
+4. Deixe **URIs de redirecionamento autorizados** vazio. O app usa uma janela (popup) do Google e não precisa de redirecionamento.
+5. Clique em **Criar**. Copie o **ID do cliente**, que termina em `.apps.googleusercontent.com`.
+
+O console também mostra uma **chave secreta do cliente**. O app **não usa** essa chave: não a copie para o projeto nem a compartilhe.
+
+As mudanças nas origens podem levar de 5 minutos a algumas horas para valer. Se o Google responder `origin_mismatch`, confira o endereço e espere um pouco.
+
+**7. Informar o ID ao app (local)**
+
+Crie o arquivo `.env.local` na raiz do projeto. Ele fica fora do git.
+
+```bash
+VITE_GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+Reinicie o `npm run dev` (ou refaça o `npm run build`) para a variável valer.
+
+### Quando publicar no GitHub Pages
+
+1. No mesmo cliente OAuth (**Google Auth Platform → Clientes**), acrescente em **Origens JavaScript autorizadas** a origem do Pages: `https://<usuário>.github.io`. É só o domínio, sem `/<repositório>` e sem barra no final, porque o Google não aceita caminho na origem. Se o console pedir, inclua também `<usuário>.github.io` em **Domínios autorizados**, na seção **Branding**.
+2. No GitHub, em **Settings → Secrets and variables → Actions**, abra a aba **Variables** (não **Secrets**) e crie a variável `VITE_GOOGLE_CLIENT_ID` com o ID do cliente. O workflow de deploy passa essa variável para o build.
+
+**Por que variável e não secret:** o ID do cliente é público por natureza. Ele vai dentro do JavaScript publicado e aparece na URL de toda autorização feita pelo navegador. A proteção não vem de esconder o ID, e sim das **origens autorizadas**: o Google só aceita pedidos vindos dos endereços cadastrados no passo 6. O que seria segredo é a chave secreta do cliente, e ela não é usada.
+
+### Reconsentimento a cada 7 dias no modo Teste
+
+No modo **Em teste**, o Google faz a autorização vencer **7 dias depois do consentimento**. Na prática, uma vez por semana o app pede para você reconectar (aparece **Reconectar Google Drive**) e o Google mostra de novo a tela de permissão.
+
+Se isso incomodar, publique o app:
+
+1. Em **Google Auth Platform → Público**, clique em **Publicar app** e confirme. O status passa a **Em produção**.
+2. Como o app só usa um escopo **não sensível** (`drive.file`) e não tem logotipo, **a verificação do Google não é obrigatória**. O Google só exige verificação para escopos sensíveis ou restritos, e a verificação da marca só para exibir logotipo ou nome do app.
+3. Sem a verificação da marca, a tela de permissão mostra só o domínio do app, e não o nome "Study Manager". Isso não muda nada no funcionamento.
+4. A lista de usuários de teste deixa de valer: qualquer conta Google consegue conectar ao seu ID do cliente. Cada pessoa só envia backups para o próprio Drive, e o app só enxerga os arquivos que ele mesmo criou.
+
+**Pendência:** o Google indica links de página inicial e de política de privacidade para apps externos em produção. O app ainda não tem uma página de política de privacidade. Se o console bloquear a publicação sem esses links, ela precisa ser criada antes.
 
 ## Ícones e sons
 
