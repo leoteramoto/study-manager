@@ -22,14 +22,18 @@ export async function obterEstadoNuvem(banco: BancoNuvem = dbNuvem): Promise<Est
   return (await banco.estado.get(ID_ESTADO_NUVEM)) ?? estadoInicialNuvem()
 }
 
-/** Aplica uma transição ao estado gravado e devolve o novo estado. */
+/**
+ * Aplica uma transição ao estado gravado e devolve o novo estado. Quando a
+ * transição devolve o mesmo objeto (nada mudou), nada é gravado.
+ */
 export async function transformarEstadoNuvem(
   transicao: (estado: EstadoNuvem) => EstadoNuvem,
   banco: BancoNuvem = dbNuvem,
 ): Promise<EstadoNuvem> {
   return banco.transaction('rw', banco.estado, async () => {
-    const novo = transicao(await obterEstadoNuvem(banco))
-    await banco.estado.put(novo)
+    const atual = await obterEstadoNuvem(banco)
+    const novo = transicao(atual)
+    if (novo !== atual) await banco.estado.put(novo)
     return novo
   })
 }

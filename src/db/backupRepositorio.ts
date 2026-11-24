@@ -9,6 +9,8 @@ import {
   type ContextoBackup,
   type DadosBackup,
   montarArquivoBackup,
+  resumirBackup,
+  type ResumoBackup,
   validarArquivoBackup,
 } from '@/domain/backup'
 import { criptografiaDisponivel, MENSAGEM_SEM_CRIPTOGRAFIA } from '@/lib/criptografia'
@@ -57,17 +59,27 @@ async function validarOuLancar(texto: string): Promise<BackupValidado> {
   return resultado.valor
 }
 
+export interface BackupGerado {
+  arquivo: ArquivoBackup
+  /** Resumo do arquivo já validado (o total de registros inclui os excluídos). */
+  resumo: ResumoBackup
+  /** Fuso configurado no momento da geração. */
+  fuso: string
+}
+
 /**
  * Gera o arquivo de backup dos dados atuais (RN32) e o valida com as mesmas
  * regras da restauração: o app nunca entrega um backup que depois recusaria.
- * Não grava nada; depois do download, chame `registrarBackupFeito`.
+ * Usado pela exportação e pelo envio ao Google Drive (RN44). Não grava nada.
  */
-export async function gerarBackup(agora: Date = new Date()): Promise<ArquivoBackup> {
+export async function gerarBackupValidado(agora: Date = new Date()): Promise<BackupGerado> {
   garantirCriptografia()
   const dados = await lerDadosAtuais()
-  const arquivo = await montarArquivoBackup(dados, agora, dados.configuracoes.fusoHorario)
+  const fuso = dados.configuracoes.fusoHorario
+  const arquivo = await montarArquivoBackup(dados, agora, fuso)
   try {
-    await validarOuLancar(arquivo.conteudo)
+    const validado = await validarOuLancar(arquivo.conteudo)
+    return { arquivo, resumo: resumirBackup(validado), fuso }
   } catch (erro) {
     if (erro instanceof ErroNegocio) {
       throw new ErroNegocio(
@@ -76,7 +88,11 @@ export async function gerarBackup(agora: Date = new Date()): Promise<ArquivoBack
     }
     throw erro
   }
-  return arquivo
+}
+
+/** Exportação em arquivo (RN32). Depois do download, chame `registrarBackupFeito`. */
+export async function gerarBackup(agora: Date = new Date()): Promise<ArquivoBackup> {
+  return (await gerarBackupValidado(agora)).arquivo
 }
 
 /** Atualiza `ultimoBackupEm` depois de baixar o arquivo (RN32, RN34). */

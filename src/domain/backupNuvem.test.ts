@@ -390,6 +390,13 @@ describe('retenção (RN46)', () => {
     expect(backupsParaLixeira(comAntigo).map((b) => b.id)).toEqual(['velho-a', 'velho-b'])
   })
 
+  it('conta o dia recém-enviado, mesmo fora da lista', () => {
+    // 30 dias na lista + o dia enviado = 31: o mais antigo sai.
+    expect(backupsParaLixeira(dias(30), 30, '2026-11-15').map((b) => b.id)).toEqual(['d1'])
+    // O dia enviado já na lista não conta duas vezes.
+    expect(backupsParaLixeira(dias(30), 30, '2026-10-30')).toEqual([])
+  })
+
   it('aceita outro limite e lista vazia', () => {
     expect(backupsParaLixeira(dias(3), 1).map((b) => b.id)).toEqual(['d1', 'd2'])
     expect(backupsParaLixeira([])).toEqual([])
@@ -569,6 +576,14 @@ describe('estado da nuvem', () => {
     })
   })
 
+  it('desconectado, envio, suspensão e falha não mudam o estado', () => {
+    const estado = estadoInicialNuvem()
+    const dados = { iniciadoEm: AGORA, concluidoEm: AGORA, totalRegistros: 1, pastaId: 'p' }
+    expect(aoEnviar(estado, dados)).toBe(estado)
+    expect(aoSuspender(estado)).toBe(estado)
+    expect(aoFalhar(estado, 'x')).toBe(estado)
+  })
+
   it('suspensão e falha guardam motivo e mensagem', () => {
     expect(aoSuspender(conectado())).toMatchObject({
       situacao: 'erro',
@@ -606,7 +621,12 @@ describe('estado da nuvem', () => {
 
   describe('indicador do cabeçalho', () => {
     it('desconectado, nenhum', () => {
-      expect(indicadorCabecalho(aoSuspender(estadoInicialNuvem()), false)).toBeNull()
+      const suspensoSemConexao: EstadoNuvem = {
+        ...estadoInicialNuvem(),
+        situacao: 'erro',
+        motivoErro: 'suspenso',
+      }
+      expect(indicadorCabecalho(suspensoSemConexao, false)).toBeNull()
     })
 
     it('suspensão tem prioridade, com ou sem token', () => {

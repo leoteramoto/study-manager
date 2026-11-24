@@ -289,10 +289,12 @@ export function backupDoDia(backups: readonly BackupNuvem[], dia: string): Backu
 export function backupsParaLixeira(
   backups: readonly BackupNuvem[],
   dias: number = DIAS_RETENCAO_NUVEM,
+  /** Dia recém-enviado, que conta mesmo que ainda não esteja na lista. */
+  diaEnviado: string | null = null,
 ): BackupNuvem[] {
-  const diasMantidos = new Set(
-    [...new Set(backups.map((backup) => backup.dia))].sort().reverse().slice(0, dias),
-  )
+  const todosOsDias = new Set(backups.map((backup) => backup.dia))
+  if (diaEnviado !== null) todosOsDias.add(diaEnviado)
+  const diasMantidos = new Set([...todosOsDias].sort().reverse().slice(0, dias))
   return backups.filter((backup) => !diasMantidos.has(backup.dia))
 }
 
@@ -409,6 +411,8 @@ interface DadosEnvio {
  * enviados podem estar desatualizados: a situação continua `pendente`.
  */
 export function aoEnviar(estado: EstadoNuvem, dados: DadosEnvio): EstadoNuvem {
+  // Envio que terminou depois de "Desconectar": não reescreve o estado.
+  if (!estado.conectado) return estado
   const gatilhoDepois =
     estado.ultimoGatilhoEm !== null &&
     Date.parse(estado.ultimoGatilhoEm) >= dados.iniciadoEm.getTime()
@@ -424,6 +428,7 @@ export function aoEnviar(estado: EstadoNuvem, dados: DadosEnvio): EstadoNuvem {
 
 /** Envio automático suspenso pelo RN45 (aparece também no cabeçalho, RN53). */
 export function aoSuspender(estado: EstadoNuvem): EstadoNuvem {
+  if (!estado.conectado) return estado
   return {
     ...estado,
     situacao: 'erro',
@@ -434,6 +439,7 @@ export function aoSuspender(estado: EstadoNuvem): EstadoNuvem {
 
 /** Falha da API ou da validação: a mensagem já vem pronta, em português. */
 export function aoFalhar(estado: EstadoNuvem, mensagem: string): EstadoNuvem {
+  if (!estado.conectado) return estado
   return { ...estado, situacao: 'erro', motivoErro: 'falha', mensagemErro: mensagem }
 }
 

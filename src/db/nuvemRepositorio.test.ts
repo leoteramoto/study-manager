@@ -78,8 +78,9 @@ describe('estado', () => {
     await dbNuvem.open()
   })
 
-  it('gatilho desconectado não muda o estado', async () => {
+  it('gatilho desconectado não grava nada', async () => {
     await registrarGatilhoNuvem(AGORA)
+    expect(await dbNuvem.estado.count()).toBe(0)
     expect(await obterEstadoNuvem()).toEqual(estadoInicialNuvem())
   })
 
