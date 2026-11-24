@@ -12,3 +12,6 @@ test-results
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
+
+# Configuração local do Claude Code
+.claude/

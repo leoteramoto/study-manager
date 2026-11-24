@@ -53,6 +53,7 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - Ao propor algo, separe o que é **requisito confirmado**, o que é **sugestão** e o que é **pendência**.
 - Não implemente itens das listas "Depois" ou "Fora de escopo" sem autorização.
 - Mantenha o README atualizado.
+- **Push ao fim de cada etapa:** depois do commit e com todas as verificações passando, rode `git push origin main`. Nunca use `--force` nem crie outra branch. Se o push falhar (rede, autenticação, rejeição), não tente contornar: mostre o erro e pare. Com o `gh` disponível, mostre também o resultado do CI do push (`gh run watch` ou `gh run list`).
 
 ## Decisões técnicas da Fase 1
 - **HashRouter** (`/#/cadastro`): o GitHub Pages não tem fallback de SPA, e o hash funciona em qualquer hospedagem estática (e no futuro Tauri).
