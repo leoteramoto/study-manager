@@ -374,7 +374,7 @@ Build **one phase at a time**. At the end of each phase, run lint, tests and bui
 - *Acceptance:* the criteria of RF09 and the full Definition of done.
 
 ### Phase 7 – Google Drive backup
-- RF11 and RN40–RN52, as described in "Phase 7 addendum" below.
+- RF11 and RN40–RN53, as described in "Phase 7 addendum" below.
 - *Acceptance:* the criteria of RF11.
 
 ## Phase 7 addendum: automatic backup to Google Drive
@@ -399,6 +399,7 @@ Table `estado` (at most one row, `id = 'drive'`):
 | ultimoEnvioEm | ISO string \| null | Last **successful** upload |
 | situacao | `'ok' \| 'pendente' \| 'erro'` | Current state |
 | mensagemErro | string \| null | User-facing message (Portuguese, no technical details) when `situacao = 'erro'` |
+| motivoErro | `'suspenso' \| 'falha'` \| null | `'suspenso'`: automatic upload suspended by RN45; `'falha'`: any other error. Null unless `situacao = 'erro'` |
 | registrosUltimoEnvio | number \| null | Total number of records (including soft-deleted) in the last successful upload, or in the last restored backup (RN45) |
 
 This database is **not** part of the backup file, survives a restore (RN33) and is only cleared by "Desconectar". The access token is **never** stored in it (RN41).
@@ -422,8 +423,10 @@ This database is **not** part of the backup file, survives a restore (RN33) and 
 - **RN45 (protection against overwriting a good backup):** since records are only soft-deleted, the total number of records (including soft-deleted) does not decrease in normal use.
   - Before each **automatic** upload, if the current total is **lower** than `registrosUltimoEnvio`, nothing is sent and `situacao = 'erro'` with the message: "Os dados deste navegador têm menos registros que o último backup no Drive. O envio automático foi suspenso para não sobrescrever o backup."
   - In that case, "Fazer backup agora" asks for explicit confirmation before uploading.
-  - With `registrosUltimoEnvio = null` (first upload after connecting) there is no comparison.
-  - After any successful restore (from a file or from Drive), `registrosUltimoEnvio` becomes the total of the restored data.
+  - The suspension is stored as `situacao = 'erro'` with `motivoErro = 'suspenso'`, and is shown in the header (RN53).
+  - **Reference read from Drive:** when connecting with no local reference (`registrosUltimoEnvio = null`: first connection, or after "Desconectar"), after finding the folder the app reads the number of records stored in the `appProperties` of the **most recent** backup in the folder and uses it as `registrosUltimoEnvio`. It is untrusted data, validated with Zod; if it is missing or invalid, there is no reference. This is safe because the reference can only block automatic uploads, never allow them. Renewing the token ("Reconectar Google Drive", RN49) does **not** read it again, so a deliberate restore of an older backup (below) is not blocked afterwards.
+  - With no reference there is no comparison.
+  - After any successful restore (from a file or from Drive), `registrosUltimoEnvio` becomes the total of the restored data. If connected, `situacao` becomes `'pendente'` (the restored data is not on Drive yet) and any error, including the suspension, is cleared.
 - **RN46 (files and retention):**
   - Folder "Study Manager" in the root of the user's Drive, created by the app and marked with `appProperties`. It is found by `pastaId`; if it no longer exists or is in the trash, it is searched by its mark and, if not found, created again.
   - **One file per day:** `study-manager-backup-YYYY-MM-DD.json`, with the day in the configured time zone at upload time. Later uploads on the same day **overwrite** that day's file. Files are marked with `appProperties` (app mark, day and a summary: export time and number of goals, subjects and records).
@@ -442,10 +445,11 @@ This database is **not** part of the backup file, survives a restore (RN33) and 
   - Every API response is untrusted data: validated with Zod before use.
   - Error messages in Portuguese, with no technical details (detailed errors only in the console in development mode).
 - **RN52 (testability):** Drive access lives behind an interface (`DestinoBackupNuvem`) with a real implementation (GIS + Drive REST API through `fetch`) and a fake one (in memory). Unit and E2E tests use only the fake one or fake `fetch`/`google` objects; **no test reaches Google**. The fake implementation never reaches the production `dist/`.
+- **RN53 (suspension indicator):** while `motivoErro = 'suspenso'`, the header shows a discreet indicator "Backup no Drive suspenso", in the same style as RN49, linking to the Google Drive section in Settings. It takes precedence over the RN49 indicator (reconnecting would not resume the upload). Other errors (`motivoErro = 'falha'`) are shown only in Settings: the next trigger tries again.
 
 ### RF11 – Google Drive backup
-- RN40 to RN52.
-- *Acceptance:* without `VITE_GOOGLE_CLIENT_ID` nothing changes; confirming a session works normally with the popup blocked, closed or unanswered, leaving the backup `pendente`; several triggers within 5 s produce one upload; a pending state written before closing the tab is shown after reopening; fewer records than the last upload suspends automatic uploads; a 31st day moves the oldest file to the trash; restoring from Drive goes through validation and the copy of current data; "Desconectar" deletes nothing in Drive.
+- RN40 to RN53.
+- *Acceptance:* without `VITE_GOOGLE_CLIENT_ID` nothing changes; confirming a session works normally with the popup blocked, closed or unanswered, leaving the backup `pendente`; several triggers within 5 s produce one upload; a pending state written before closing the tab is shown after reopening; fewer records than the last upload suspends automatic uploads and shows "Backup no Drive suspenso" in the header; connecting reads the reference count from the most recent backup in Drive; a 31st day moves the oldest file to the trash; restoring from Drive goes through validation and the copy of current data; "Desconectar" deletes nothing in Drive.
 
 ## Tests
 
