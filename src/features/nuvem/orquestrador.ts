@@ -90,6 +90,8 @@ export interface OrquestradorNuvem {
   /** Resolve quando o estado gravado foi lido pela primeira vez. */
   readonly pronto: Promise<void>
   estado(): EstadoNuvem
+  /** A seção Google Drive foi exibida: prepara a autorização para o clique. */
+  preparar(): void
   temToken(): boolean
   aoMudarToken(ouvinte: () => void): () => void
   /**
@@ -306,6 +308,8 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
 
   const pararDeObservar = observarEstado((novo) => {
     atualizar(novo)
+    // Conectado: o script do Google já fica pronto para o próximo clique.
+    if (novo.conectado) destino.preparar()
     marcarPronto()
   })
   const pararToken = destino.aoMudarToken(() => {
@@ -316,6 +320,9 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
   return {
     pronto,
     estado: () => estado,
+    preparar: () => {
+      destino.preparar()
+    },
     temToken: () => destino.temToken(),
     aoMudarToken: (ouvinte) => destino.aoMudarToken(ouvinte),
 

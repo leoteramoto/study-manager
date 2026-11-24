@@ -42,6 +42,7 @@ export class DestinoFalso implements DestinoBackupNuvem {
   readonly arquivos = new Map<string, ArquivoFalso>()
   readonly pedidosAutorizacao: OpcoesAutorizacao[] = []
   gravacoes = 0
+  preparacoes = 0
   revogacoes = 0
   /** Maior número de gravações simultâneas já visto (teste do lock). */
   maxGravacoesSimultaneas = 0
@@ -51,6 +52,10 @@ export class DestinoFalso implements DestinoBackupNuvem {
   private proximoId = 1
   private instante = Date.parse('2026-01-01T00:00:00.000Z')
   private readonly ouvintes = new Set<() => void>()
+
+  preparar(): void {
+    this.preparacoes++
+  }
 
   temToken(): boolean {
     return this.token

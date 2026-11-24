@@ -16,11 +16,14 @@ export type TipoErroNuvem = 'semAutorizacao' | 'offline' | 'falha'
  */
 export class ErroNuvem extends Error {
   readonly tipo: TipoErroNuvem
+  /** Status HTTP da resposta, quando houve resposta. */
+  readonly status: number | null
 
-  constructor(tipo: TipoErroNuvem, mensagem: string = tipo) {
+  constructor(tipo: TipoErroNuvem, mensagem: string = tipo, status: number | null = null) {
     super(mensagem)
     this.name = 'ErroNuvem'
     this.tipo = tipo
+    this.status = status
   }
 }
 
@@ -41,6 +44,11 @@ export interface DadosGravacao {
 }
 
 export interface DestinoBackupNuvem {
+  /**
+   * Prepara a autorização sem abrir nada (na implementação real, carrega o
+   * script do Google e cria o token client). Idempotente; não espera.
+   */
+  preparar(): void
   /** Há token válido nesta aba. */
   temToken(): boolean
   /** Avisa quando o token aparece ou some. Devolve a função que para de ouvir. */

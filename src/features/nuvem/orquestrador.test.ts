@@ -725,6 +725,23 @@ describe('token', () => {
     expect((await obterEstadoNuvem()).situacao).toBe('pendente')
   })
 
+  it('prepara a autorização ao exibir a seção e quando o estado está conectado', async () => {
+    const { destino, orquestrador } = montar()
+    await orquestrador.pronto
+    expect(destino.preparacoes).toBe(0) // desconectado: nada carrega sozinho
+    orquestrador.preparar()
+    expect(destino.preparacoes).toBe(1)
+    await orquestrador.conectar()
+    await vi.waitFor(() => {
+      expect(destino.preparacoes).toBeGreaterThan(1)
+    })
+
+    // Aba reaberta com o estado conectado: prepara na inicialização.
+    const { destino: outro, orquestrador: reaberto } = montar()
+    await reaberto.pronto
+    expect(outro.preparacoes).toBeGreaterThan(0)
+  })
+
   it('com token válido, o clique não abre popup', async () => {
     const { destino, orquestrador } = await montarConectado()
     const pedidos = destino.pedidosAutorizacao.length

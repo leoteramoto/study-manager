@@ -10,22 +10,36 @@ import { VitePWA } from 'vite-plugin-pwa'
  * precisa de scripts inline (React Refresh). `style-src 'unsafe-inline'` é
  * necessário porque componentes Radix injetam <style> em tempo de execução.
  */
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self'",
-  "media-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self'",
-  "manifest-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'none'",
-].join('; ')
+function montarCsp(comGoogle: boolean): string {
+  // Backup no Google Drive (RN51): entra só quando há VITE_GOOGLE_CLIENT_ID.
+  // - script-src accounts.google.com/gsi/client: a biblioteca GIS, só esse
+  //   arquivo (o Google não permite empacotá-la);
+  // - connect-src accounts.google.com/gsi/: chamadas internas do GIS
+  //   (recomendação do Google);
+  // - connect-src www.googleapis.com: API do Drive (metadados, upload, download).
+  // A lista final é conferida com o Google de verdade (etapa 10 da Fase 7).
+  const script = comGoogle ? "'self' https://accounts.google.com/gsi/client" : "'self'"
+  const connect = comGoogle
+    ? "'self' https://accounts.google.com/gsi/ https://www.googleapis.com"
+    : "'self'"
+  return [
+    "default-src 'self'",
+    `script-src ${script}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "media-src 'self'",
+    `connect-src ${connect}`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+  ].join('; ')
+}
 
-function cspPlugin(): Plugin {
+function cspPlugin(comGoogle: boolean): Plugin {
+  const csp = montarCsp(comGoogle)
   return {
     name: 'study-manager-csp',
     apply: 'build',
@@ -33,7 +47,7 @@ function cspPlugin(): Plugin {
     transformIndexHtml: (html) =>
       html.replace(
         '<meta charset="UTF-8" />',
-        `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`,
+        `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`,
       ),
   }
 }
@@ -67,7 +81,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
-      cspPlugin(),
+      cspPlugin(Boolean(env.VITE_GOOGLE_CLIENT_ID)),
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,

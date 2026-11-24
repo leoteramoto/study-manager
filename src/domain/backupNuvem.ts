@@ -114,6 +114,7 @@ const esquemaArquivoDrive = z.object({
     .transform(Number)
     .optional(),
   appProperties: z.record(z.string(), z.string()).optional(),
+  trashed: z.boolean().optional(),
 })
 
 export type ArquivoDrive = z.output<typeof esquemaArquivoDrive>
