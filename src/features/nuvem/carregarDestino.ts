@@ -13,6 +13,12 @@ export async function carregarDestinoGoogle(
 ): Promise<DestinoBackupNuvem | null> {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   if (!clientId) return null
+  // Só no build de E2E: o destino falso, sem Google. O Vite resolve a condição
+  // no build; nos builds normais o import some (conferido pelo verificar:dist-google).
+  if (import.meta.env.VITE_DESTINO_NUVEM === 'falso') {
+    const { criarDestinoE2E } = await import('./e2e/destinoE2E')
+    return criarDestinoE2E()
+  }
   const { DestinoGoogle } = await import('./google/destinoGoogle')
   return new DestinoGoogle({ clientId, registrarErro })
 }

@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Porta própria dos testes, para nunca reaproveitar um `vite preview` aberto à mão
-// (que pode estar servindo um build antigo).
+// Portas próprias dos testes, para nunca reaproveitar um `vite preview` aberto à
+// mão (que pode estar servindo um build antigo).
 const PORTA = 4180
+/** Build com o backup na nuvem usando o destino falso (Fase 7). */
+const PORTA_NUVEM = 4181
+
+/** Specs que só rodam no build com o destino falso da nuvem. */
+const SPECS_NUVEM = /nuvem\.spec\.ts$/
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,17 +20,42 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'chromium', testIgnore: SPECS_NUVEM, use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', testIgnore: SPECS_NUVEM, use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'chromium-nuvem',
+      testMatch: SPECS_NUVEM,
+      use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORTA_NUVEM}/` },
+    },
+    {
+      name: 'firefox-nuvem',
+      testMatch: SPECS_NUVEM,
+      use: { ...devices['Desktop Firefox'], baseURL: `http://localhost:${PORTA_NUVEM}/` },
+    },
   ],
-  webServer: {
-    command: `npm run build && npx vite preview --port ${PORTA} --strictPort`,
-    // Ticks do cronômetro na thread principal, para o page.clock controlar o tempo.
-    // VITE_GOOGLE_CLIENT_ID vazio: o E2E nunca usa o Client ID de um .env.local
-    // nem carrega o script do Google (a variável do processo tem prioridade).
-    env: { VITE_FONTE_TICKS: 'principal', VITE_GOOGLE_CLIENT_ID: '' },
-    url: `http://localhost:${PORTA}/`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: `npm run build && npx vite preview --port ${PORTA} --strictPort`,
+      // Ticks do cronômetro na thread principal, para o page.clock controlar o tempo.
+      // VITE_GOOGLE_CLIENT_ID vazio: o E2E nunca usa o Client ID de um .env.local
+      // nem carrega o script do Google (a variável do processo tem prioridade).
+      env: { VITE_FONTE_TICKS: 'principal', VITE_GOOGLE_CLIENT_ID: '' },
+      url: `http://localhost:${PORTA}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // Client ID de teste e destino falso: o recurso do Drive existe, mas nada
+      // sai para o Google (o GIS nunca é carregado). Pasta e porta próprias.
+      command: `npx vite build --outDir dist-e2e-nuvem --emptyOutDir --logLevel warn && npx vite preview --outDir dist-e2e-nuvem --port ${PORTA_NUVEM} --strictPort`,
+      env: {
+        VITE_FONTE_TICKS: 'principal',
+        VITE_GOOGLE_CLIENT_ID: 'e2e-teste.apps.googleusercontent.com',
+        VITE_DESTINO_NUVEM: 'falso',
+      },
+      url: `http://localhost:${PORTA_NUVEM}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 })

@@ -61,6 +61,11 @@ export class ClienteDrive {
 
   /** A pasta informada, se ainda for a pasta do app; senão acha pela marca ou cria. */
   async garantirPasta(pastaId: string | null): Promise<string> {
+    return (await this.acharPasta(pastaId)) ?? this.criarPasta()
+  }
+
+  /** A pasta do app (a informada, se ainda for dela, ou pela marca); `null` se não existir. */
+  async acharPasta(pastaId: string | null): Promise<string | null> {
     if (pastaId !== null) {
       const atual = await this.metadadosOuNulo(pastaId)
       if (
@@ -81,9 +86,10 @@ export class ClienteDrive {
     })
     const pagina = interpretarListaArquivos(await this.json('pasta', `${API}/files?${parametros}`))
     if (!pagina) throw new ErroNuvem('falha', 'pasta: resposta inválida')
-    const existente = pagina.arquivos.find((arquivo) => arquivo.mimeType === MIME_PASTA)
-    if (existente) return existente.id
+    return pagina.arquivos.find((arquivo) => arquivo.mimeType === MIME_PASTA)?.id ?? null
+  }
 
+  private async criarPasta(): Promise<string> {
     const criada = interpretarArquivoDrive(
       await this.json('pasta', `${API}/files?fields=${CAMPOS_ARQUIVO}`, {
         method: 'POST',

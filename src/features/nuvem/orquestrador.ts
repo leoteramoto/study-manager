@@ -477,8 +477,9 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
         }
         try {
           const atual = await obterEstadoNuvem()
-          const pastaId = await destino.garantirPasta(atual.pastaId)
-          return await destino.listarBackups(pastaId)
+          // Listar não cria a pasta: sem ela, não há backups.
+          const pastaId = await destino.acharPasta(atual.pastaId)
+          return pastaId === null ? [] : await destino.listarBackups(pastaId)
         } catch (erro) {
           registrarErro('lista', erro)
           throw erroDeRestauracao(erro, MENSAGENS_NUVEM.falhaLista)

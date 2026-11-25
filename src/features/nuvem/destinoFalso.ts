@@ -33,6 +33,13 @@ export interface ArquivoFalso {
   conteudo: string
 }
 
+/** Estado do "Drive" falso, serializável (para o destino do E2E guardar). */
+export interface EstadoDestinoFalso {
+  arquivos: ArquivoFalso[]
+  proximoId: number
+  instante: number
+}
+
 export class DestinoFalso implements DestinoBackupNuvem {
   email: string | null = 'pessoa@example.com'
   modoAutorizacao: ModoAutorizacaoFalsa = 'concede'
@@ -53,6 +60,21 @@ export class DestinoFalso implements DestinoBackupNuvem {
   private proximoId = 1
   private instante = Date.parse('2026-01-01T00:00:00.000Z')
   private readonly ouvintes = new Set<() => void>()
+
+  exportarEstado(): EstadoDestinoFalso {
+    return {
+      arquivos: [...this.arquivos.values()],
+      proximoId: this.proximoId,
+      instante: this.instante,
+    }
+  }
+
+  importarEstado(estado: EstadoDestinoFalso): void {
+    this.arquivos.clear()
+    for (const arquivo of estado.arquivos) this.arquivos.set(arquivo.meta.id, arquivo)
+    this.proximoId = estado.proximoId
+    this.instante = estado.instante
+  }
 
   preparar(): void {
     this.preparacoes++
@@ -96,6 +118,13 @@ export class DestinoFalso implements DestinoBackupNuvem {
   }
 
   async garantirPasta(pastaId: string | null): Promise<string> {
+    return (
+      (await this.acharPasta(pastaId)) ??
+      this.criar(NOME_PASTA_NUVEM, MIME_PASTA, [], { ...APP_PROPERTIES_PASTA }, '').meta.id
+    )
+  }
+
+  async acharPasta(pastaId: string | null): Promise<string | null> {
     await this.operacao()
     const atual = pastaId === null ? undefined : this.arquivos.get(pastaId)
     if (atual && !atual.lixeira) return atual.meta.id
@@ -108,7 +137,7 @@ export class DestinoFalso implements DestinoBackupNuvem {
         return arquivo.meta.id
       }
     }
-    return this.criar(NOME_PASTA_NUVEM, MIME_PASTA, [], { ...APP_PROPERTIES_PASTA }, '').meta.id
+    return null
   }
 
   async listarBackups(pastaId: string): Promise<BackupNuvem[]> {

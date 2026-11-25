@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-e2e-nuvem
 dev-dist
 coverage
 playwright-report

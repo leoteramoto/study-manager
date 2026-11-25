@@ -73,6 +73,8 @@ export interface DestinoBackupNuvem {
   obterEmail(): Promise<string | null>
   /** Devolve o id da pasta do app: a informada, se ainda existir; senão acha ou cria. */
   garantirPasta(pastaId: string | null): Promise<string>
+  /** Como `garantirPasta`, mas nunca cria: `null` se a pasta do app não existir. */
+  acharPasta(pastaId: string | null): Promise<string | null>
   /** Backups do app na pasta, do mais recente para o mais antigo. */
   listarBackups(pastaId: string): Promise<BackupNuvem[]>
   gravarBackup(dados: DadosGravacao): Promise<void>

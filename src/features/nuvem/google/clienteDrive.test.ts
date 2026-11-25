@@ -142,6 +142,13 @@ describe('garantirPasta', () => {
     })
   })
 
+  it('acharPasta nunca cria: sem pasta, devolve null sem POST', async () => {
+    rede.em('GET', `${API}/files/sumiu`, json({}, 404))
+    rede.em('GET', `${API}/files`, json({ files: [] }))
+    await expect(cliente.acharPasta('sumiu')).resolves.toBeNull()
+    expect(rede.chamadas.some((chamada) => chamada.metodo === 'POST')).toBe(false)
+  })
+
   it('respostas inválidas na busca ou na criação viram falha', async () => {
     rede.em('GET', `${API}/files`, json({ arquivos: [] }))
     expect((await erroDe(cliente.garantirPasta(null))).tipo).toBe('falha')

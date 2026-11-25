@@ -64,6 +64,10 @@ export class DestinoGoogle implements DestinoBackupNuvem {
     return this.drive.garantirPasta(pastaId)
   }
 
+  acharPasta(pastaId: string | null): Promise<string | null> {
+    return this.drive.acharPasta(pastaId)
+  }
+
   listarBackups(pastaId: string): Promise<BackupNuvem[]> {
     return this.drive.listarBackups(pastaId)
   }

@@ -5,7 +5,7 @@ import { type BackupGerado, gerarBackupValidado } from '@/db/backupRepositorio'
 import { garantirConfiguracoesPadrao } from '@/db/configuracoesRepositorio'
 import { ErroNegocio } from '@/db/erros'
 import { criarMateria } from '@/db/materiasRepositorio'
-import { obterEstadoNuvem } from '@/db/nuvemRepositorio'
+import { obterEstadoNuvem, registrarConexaoNuvem } from '@/db/nuvemRepositorio'
 import { criarObjetivo } from '@/db/objetivosRepositorio'
 import { definirPlanejamento } from '@/db/planejamentoRepositorio'
 import { lancarManual } from '@/db/registrosRepositorio'
@@ -786,6 +786,34 @@ describe('token', () => {
 // ---------------------------------------------------------------------------
 // Retenção, falhas e desconexão
 // ---------------------------------------------------------------------------
+
+describe('listar para restaurar (RN47)', () => {
+  it('sem a pasta do app no Drive: lista vazia e nenhuma pasta criada', async () => {
+    const destino = new DestinoFalso()
+    const { orquestrador } = montar(destino)
+    await orquestrador.pronto
+    await registrarConexaoNuvem({
+      email: 'pessoa@example.com',
+      pastaId: 'sumiu',
+      referenciaDrive: 0,
+    })
+    destino.definirToken(true)
+    await expect(orquestrador.listarBackupsParaRestaurar()).resolves.toEqual([])
+    expect(destino.arquivos.size).toBe(0)
+  })
+
+  it('com a pasta: lista os backups dela', async () => {
+    const destino = new DestinoFalso()
+    const pasta = await semearDrive(destino, '2026-11-20', '7')
+    const { orquestrador } = montar(destino)
+    await orquestrador.pronto
+    await registrarConexaoNuvem({ email: null, pastaId: pasta, referenciaDrive: 7 })
+    destino.definirToken(true)
+    const lista = await orquestrador.listarBackupsParaRestaurar()
+    expect(lista.map((b) => b.dia)).toEqual(['2026-11-20'])
+    expect(destino.arquivos.size).toBe(2) // a pasta e o backup; nada criado
+  })
+})
 
 describe('retenção (RN46)', () => {
   it('no 31º dia, o mais antigo vai para a lixeira; arquivos alheios ficam', async () => {

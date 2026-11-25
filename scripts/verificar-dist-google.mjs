@@ -36,8 +36,10 @@ const CSP_COM_GOOGLE = CSP_SEM_GOOGLE.replace(
 const DOMINIOS = ['accounts.google.com', 'googleapis.com']
 const URL_GIS = 'https://accounts.google.com/gsi/client'
 const TEXTO = /\.(html|js|mjs|css|json|webmanifest|txt|svg)$/
+/** Marcador único do destino falso do E2E (`src/features/nuvem/e2e/destinoE2E.ts`). */
+const MARCADOR_E2E = 'study-manager:e2e-destino-falso'
 
-function construir(clientId) {
+function construir(clientId, destinoNuvem = '') {
   const destino = mkdtempSync(join(tmpdir(), 'study-manager-dist-'))
   const resultado = spawnSync(
     'npx',
@@ -45,7 +47,7 @@ function construir(clientId) {
     {
       stdio: 'inherit',
       // A variável do processo tem prioridade sobre o .env.local.
-      env: { ...process.env, VITE_GOOGLE_CLIENT_ID: clientId },
+      env: { ...process.env, VITE_GOOGLE_CLIENT_ID: clientId, VITE_DESTINO_NUVEM: destinoNuvem },
     },
   )
   if (resultado.status !== 0) {
@@ -62,6 +64,13 @@ function arquivos(pasta) {
   })
 }
 
+/** Arquivos de texto do dist que contêm `trecho`. */
+function mencionam(pasta, trecho) {
+  return arquivos(pasta)
+    .filter((c) => TEXTO.test(c) && readFileSync(c, 'utf8').includes(trecho))
+    .map((c) => c.slice(pasta.length + 1))
+}
+
 function lerCsp(pasta) {
   const html = readFileSync(join(pasta, 'index.html'), 'utf8')
   const achado = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)
@@ -74,6 +83,9 @@ const semGoogle = construir('')
 try {
   const csp = lerCsp(semGoogle)
   if (csp !== CSP_SEM_GOOGLE) problemas.push(`Sem a variável, a CSP mudou:\n  ${csp}`)
+  for (const nome of mencionam(semGoogle, MARCADOR_E2E)) {
+    problemas.push(`Sem a variável, ${nome} traz o destino falso do E2E.`)
+  }
   for (const caminho of arquivos(semGoogle).filter((c) => TEXTO.test(c))) {
     const conteudo = readFileSync(caminho, 'utf8')
     for (const dominio of DOMINIOS) {
@@ -106,8 +118,21 @@ try {
     const nome = chunk.slice(comGoogle.length + 1)
     if (html.includes(nome)) problemas.push(`Com a variável, ${nome} está no bundle inicial.`)
   }
+  for (const nome of mencionam(comGoogle, MARCADOR_E2E)) {
+    problemas.push(`Com a variável, ${nome} traz o destino falso do E2E.`)
+  }
 } finally {
   rmSync(comGoogle, { recursive: true, force: true })
+}
+
+// Controle positivo: no build do E2E o marcador aparece (a busca acima funciona).
+const doE2E = construir('e2e-teste.apps.googleusercontent.com', 'falso')
+try {
+  if (mencionam(doE2E, MARCADOR_E2E).length === 0) {
+    problemas.push('No build do E2E o marcador do destino falso não foi achado: a busca não vale.')
+  }
+} finally {
+  rmSync(doE2E, { recursive: true, force: true })
 }
 
 if (problemas.length > 0) {
@@ -115,5 +140,5 @@ if (problemas.length > 0) {
   process.exit(1)
 }
 console.log(
-  'Sem a variável: dist sem Google e CSP de antes. Com a variável: CSP com o Google e código do Drive num chunk carregado sob demanda.',
+  'Sem a variável: dist sem Google, sem destino falso e com a CSP de antes. Com a variável: CSP com o Google, código do Drive num chunk sob demanda e sem destino falso. Build do E2E: destino falso presente.',
 )
