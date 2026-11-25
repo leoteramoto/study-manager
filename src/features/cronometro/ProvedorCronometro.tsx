@@ -27,6 +27,7 @@ import {
   transicionar,
   type ResultadoTransicao,
 } from '@/domain/cronometro'
+import { useComBackup } from '@/features/nuvem/useComBackup'
 import { FUSO_PADRAO } from '@/lib/fuso'
 import { gravarUltimaDuracao } from '@/lib/preferencias'
 import { SOM_PADRAO } from '@/lib/sons'
@@ -245,6 +246,8 @@ export function ProvedorCronometro({ children, fonteTicks, lideranca }: Props) {
     }
   }, [executarEvento])
 
+  const comBackup = useComBackup()
+
   const valor = useMemo<ValorCronometro>(() => {
     const executar = async (acao: () => Promise<unknown>) => {
       setErro(null)
@@ -283,9 +286,14 @@ export function ProvedorCronometro({ children, fonteTicks, lideranca }: Props) {
       descartar: () => executarEvento({ tipo: 'descartar' }),
       contarIntervalo: () => executarEvento({ tipo: 'contarIntervalo' }),
       encerrarRecuperada: () => executarEvento({ tipo: 'encerrarRecuperada' }),
-      confirmar: () => executar(() => confirmarSessao()),
+      confirmar: () => {
+        // Síncrono no clique: o pedido de token ao Google sai antes de qualquer
+        // await (RN41). A confirmação nunca espera o Google (RN42).
+        const confirmacao = comBackup(() => confirmarSessao())
+        return executar(() => confirmacao)
+      },
     }
-  }, [sessao, materia, objetivo, agora, causaPausa, erro, configuracoes, executarEvento])
+  }, [sessao, materia, objetivo, agora, causaPausa, erro, configuracoes, executarEvento, comBackup])
 
   const estado = sessao?.estado
 

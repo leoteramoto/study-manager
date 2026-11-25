@@ -35,6 +35,9 @@ import { type DestinoBackupNuvem, ErroNuvem } from './destino'
 
 export const NOME_LOCK_NUVEM = 'study-manager:nuvem'
 
+/** Esperas de 1 ms pelo relógio passar do milissegundo do próprio gatilho. */
+export const MAXIMO_ESPERAS_RELOGIO = 20
+
 export const MENSAGENS_NUVEM = {
   falhaEnvio:
     'Não foi possível enviar o backup para o Google Drive. O app tentará de novo no próximo envio.',
@@ -315,6 +318,27 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
     atualizar(await registrarGatilhoNuvem(agora()))
   }
 
+  /**
+   * Gatilho seguido de envio na hora ("Conectar", "Fazer backup agora"). O
+   * envio só começa depois que o relógio passa do milissegundo do gatilho:
+   * no mesmo milissegundo, `aoEnviar` trataria o próprio gatilho como
+   * posterior ao início (dados talvez desatualizados), deixaria "pendente" e
+   * agendaria um segundo envio sem necessidade. A espera é limitada: com o
+   * relógio parado (por exemplo, `Date` falso), o envio segue assim mesmo.
+   */
+  async function gravarGatilhoAntesDeEnviar(): Promise<void> {
+    await gravarGatilho()
+    const gatilho = estado.ultimoGatilhoEm === null ? null : Date.parse(estado.ultimoGatilhoEm)
+    if (gatilho === null) return
+    for (
+      let tentativa = 0;
+      tentativa < MAXIMO_ESPERAS_RELOGIO && agora().getTime() <= gatilho;
+      tentativa++
+    ) {
+      await new Promise((resolver) => setTimeout(resolver, 1))
+    }
+  }
+
   const pararDeObservar = observarEstado((novo) => {
     atualizar(novo)
     // Conectado: o script do Google já fica pronto para o próximo clique.
@@ -371,7 +395,7 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
                 : null
             atualizar(await registrarConexaoNuvem({ email, pastaId, referenciaDrive }))
             // "Conectar" é gatilho imediato, sem a espera de 5 s (RN43).
-            await gravarGatilho()
+            await gravarGatilhoAntesDeEnviar()
           } catch (erro) {
             registrarErro('conexao', erro)
             return { ok: false, erro: MENSAGENS_NUVEM.falhaConexao }
@@ -396,7 +420,7 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
       return acompanhar(
         (async (): Promise<ResultadoEnvio> => {
           cancelarAgendamento()
-          await gravarGatilho()
+          await gravarGatilhoAntesDeEnviar()
           if (autorizacao && !(await autorizacao)) return 'pendente'
           return enviar('manual', confirmado)
         })(),
@@ -426,17 +450,52 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
   }
 }
 
+export interface OpcoesComBackup {
+  /**
+   * O recurso existe neste build. Com ele ligado e o orquestrador ainda
+   * carregando (import dinâmico), o gatilho não se perde: o "pendente" é
+   * gravado direto no banco da nuvem.
+   */
+  disponivel?: boolean
+  /** Gravação direta do gatilho (padrão: `registrarGatilhoNuvem`). */
+  gravarGatilho?: () => Promise<unknown>
+  registrarErro?: (contexto: string, erro: unknown) => void
+}
+
 /**
- * Executa uma ação local que dispara backup (RN42, RN43). Chamar de forma
- * síncrona no clique. A ação roda sempre e o resultado dela é devolvido sem
- * esperar o Google; o envio só é agendado se a ação der certo.
+ * Executa uma ação local que dispara backup (RN42, RN43). **Chamar de forma
+ * síncrona no handler do clique ou do submit**, antes de qualquer `await`: o
+ * pedido de token sai aqui, enquanto o navegador ainda permite o popup.
+ *
+ * A ação roda sempre e o resultado (ou o erro) dela é devolvido sem esperar
+ * o Google; nenhuma falha do Google chega a quem chamou. O gatilho só é
+ * registrado se a ação der certo.
  */
-export async function executarComBackup<T>(
+export function executarComBackup<T>(
   orquestrador: OrquestradorNuvem | null,
   acao: () => Promise<T>,
+  opcoes: OpcoesComBackup = {},
 ): Promise<T> {
-  orquestrador?.prepararNoClique()
-  const resultado = await acao()
-  orquestrador?.gatilho()
-  return resultado
+  const {
+    disponivel = false,
+    gravarGatilho = () => registrarGatilhoNuvem(),
+    registrarErro = registrarErroPadrao,
+  } = opcoes
+  try {
+    orquestrador?.prepararNoClique()
+  } catch (erro) {
+    registrarErro('autorizacao', erro)
+  }
+  return (async () => {
+    const resultado = await acao()
+    if (orquestrador) {
+      orquestrador.gatilho()
+    } else if (disponivel) {
+      // Orquestrador ainda carregando: só grava o "pendente" (sem mudança se desconectado).
+      void gravarGatilho().catch((erro: unknown) => {
+        registrarErro('gatilho', erro)
+      })
+    }
+    return resultado
+  })()
 }

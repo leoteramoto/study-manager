@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { AvisoErro } from '@/components/AvisoErro'
 import {
   AlertDialog,
@@ -22,6 +22,8 @@ export function DialogoConfirmacao() {
   const { sessao, materia, objetivo, fuso, erro, limparErro, confirmar, descartar } =
     useCronometro()
   const [salvando, setSalvando] = useState(false)
+  // Clique duplo antes de o botão desabilitar: uma confirmação e um popup só.
+  const confirmando = useRef(false)
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
 
   if (sessao?.estado !== 'aguardando_confirmacao') return null
@@ -41,11 +43,16 @@ export function DialogoConfirmacao() {
   ]
 
   const aoConfirmar = async () => {
-    if (salvando) return
+    if (confirmando.current) return
+    confirmando.current = true
+    // `confirmar` é chamado antes de qualquer await: pede o token ao Google
+    // ainda dentro do clique (RN41).
+    const confirmacao = confirmar()
     setSalvando(true)
     try {
-      await confirmar()
+      await confirmacao
     } finally {
+      confirmando.current = false
       setSalvando(false)
     }
   }

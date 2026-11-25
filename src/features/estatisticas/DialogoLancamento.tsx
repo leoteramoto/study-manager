@@ -23,6 +23,7 @@ import {
   MINUTOS_MINIMOS_LANCAMENTO,
   minutosDoLancamento,
 } from '@/domain/lancamentos'
+import { useComBackup } from '@/features/nuvem/useComBackup'
 import { CLASSE_SELECT } from '@/lib/estilos'
 import { errosPorCampo } from '@/lib/formulario'
 
@@ -55,6 +56,7 @@ export function DialogoLancamento({ hoje, materias, objetivos, registro, onFecha
   const [erros, setErros] = useState<Record<string, string>>({})
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const comBackup = useComBackup()
 
   const materiaAtualId = registro?.materiaId ?? null
   const { grupos, materiaAtualArquivada } = useMemo(() => {
@@ -85,10 +87,15 @@ export function DialogoLancamento({ hoje, materias, objetivos, registro, onFecha
       return
     }
     setErros({})
-    setSalvando(true)
-    try {
+    // Ainda síncrono no submit (clique em Lançar/Salvar ou Enter num campo):
+    // o pedido de token ao Google sai antes do primeiro await (RN41, RN43).
+    const gravacao = comBackup(async () => {
       if (registro) await editarManual(registro.id, validacao.data)
       else await lancarManual(validacao.data)
+    })
+    setSalvando(true)
+    try {
+      await gravacao
       onFechar()
     } catch (e) {
       setErro(mensagemDeErro(e))

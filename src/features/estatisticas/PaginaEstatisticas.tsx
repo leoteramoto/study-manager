@@ -19,6 +19,7 @@ import { dataNoFuso, intervaloDoAno, mesNoFuso } from '@/domain/tempo'
 import { CLASSE_SELECT } from '@/lib/estilos'
 import { FUSO_PADRAO } from '@/lib/fuso'
 import { useAgora } from '@/lib/useAgora'
+import { useComBackup } from '@/features/nuvem/useComBackup'
 import { useExecutar } from '@/lib/useExecutar'
 import { ConfirmarExclusao } from './ConfirmarExclusao'
 import { ConteudoPeriodo } from './ConteudoPeriodo'
@@ -47,6 +48,7 @@ export function PaginaEstatisticas() {
   const anosComRegistros = useLiveQuery(listarAnosComRegistros)
   const [dialogo, setDialogo] = useState<Dialogo | null>(null)
   const { erro, executar, limparErro } = useExecutar()
+  const comBackup = useComBackup()
 
   const fuso = configuracoes?.fusoHorario ?? FUSO_PADRAO
   const hoje = dataNoFuso(agora, fuso)
@@ -185,8 +187,10 @@ export function PaginaEstatisticas() {
           descricao={dialogo.descricao}
           onConfirmar={() => {
             const { id } = dialogo.registro
+            // Síncrono no clique em Excluir (RN41, RN43): qualquer registro.
+            const exclusao = comBackup(() => excluirRegistro(id))
             setDialogo(null)
-            void executar(() => excluirRegistro(id))
+            void executar(() => exclusao)
           }}
           onFechar={() => {
             setDialogo(null)

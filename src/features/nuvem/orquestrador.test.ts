@@ -23,6 +23,7 @@ import {
   criarOrquestradorNuvem,
   type DependenciasOrquestrador,
   executarComBackup,
+  MAXIMO_ESPERAS_RELOGIO,
   MENSAGENS_NUVEM,
   type MonitorConexao,
   type OrquestradorNuvem,
@@ -441,6 +442,38 @@ describe('agrupamento (RN43)', () => {
 // ---------------------------------------------------------------------------
 
 describe('conectar', () => {
+  it('com o relógio parado, conectar e "Fazer backup agora" terminam assim mesmo', async () => {
+    const parado = () => new Date(INICIO)
+    const { destino, orquestrador } = montar(new DestinoFalso(), { agora: parado })
+    await orquestrador.pronto
+    const espera = vi.spyOn(globalThis, 'setTimeout')
+    try {
+      await expect(orquestrador.conectar()).resolves.toMatchObject({ ok: true })
+      await expect(orquestrador.enviarAgora()).resolves.not.toBe('erro')
+      // Cada envio imediato espera no máximo MAXIMO_ESPERAS_RELOGIO vezes.
+      const esperasDe1ms = espera.mock.calls.filter(([, ms]) => ms === 1).length
+      expect(esperasDe1ms).toBe(2 * MAXIMO_ESPERAS_RELOGIO)
+    } finally {
+      espera.mockRestore()
+    }
+    expect(destino.gravacoes).toBeGreaterThan(0)
+  })
+
+  it('gatilho e início do envio no mesmo milissegundo: termina em dia, sem 2º envio', async () => {
+    // Relógio que só anda 1 ms a cada 3 leituras (como o relógio real, rápido).
+    let leituras = 0
+    const devagar = () => new Date(INICIO + Math.floor(leituras++ / 3))
+    const { destino, orquestrador } = montar(new DestinoFalso(), { agora: devagar })
+    await orquestrador.pronto
+
+    await expect(orquestrador.conectar()).resolves.toEqual({ ok: true, envio: 'enviado' })
+    expect((await obterEstadoNuvem()).situacao).toBe('ok')
+    await expect(orquestrador.enviarAgora()).resolves.toBe('enviado')
+    expect((await obterEstadoNuvem()).situacao).toBe('ok')
+    expect(relogio.ativas()).toBe(0)
+    expect(destino.gravacoes).toBe(2)
+  })
+
   it('envia na hora, sem esperar os 5 s', async () => {
     const { destino, orquestrador } = montar()
     await orquestrador.pronto

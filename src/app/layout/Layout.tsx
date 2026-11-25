@@ -12,8 +12,10 @@ import { MenuMobile } from './MenuMobile'
 
 export function Layout() {
   return (
-    <ProvedorCronometro>
-      <ProvedorNuvem>
+    // O provedor da nuvem fica por fora: a confirmação do cronômetro, aberta
+    // pelo ProvedorCronometro, dispara o backup (RN43).
+    <ProvedorNuvem>
+      <ProvedorCronometro>
         <div className="min-h-svh lg:pl-64">
           <a
             href="#conteudo"
@@ -46,7 +48,7 @@ export function Layout() {
             <Outlet />
           </main>
         </div>
-      </ProvedorNuvem>
-    </ProvedorCronometro>
+      </ProvedorCronometro>
+    </ProvedorNuvem>
   )
 }
