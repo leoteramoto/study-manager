@@ -190,6 +190,7 @@ O app só pede o escopo `drive.file`: ele enxerga apenas a pasta e os arquivos q
 
 - Se o envio ficar pendente sem autorização do Google nesta aba (por exemplo, depois de reabrir o app), o cabeçalho mostra **Reconectar Google Drive**.
 - Se os dados deste navegador tiverem menos registros que o último backup no Drive (por exemplo, num navegador novo), o envio automático é suspenso para não sobrescrever o backup bom, e o cabeçalho mostra **Backup no Drive suspenso**. Nesse caso, restaure o backup do Drive ou, se for mesmo o que você quer, use **Fazer backup agora** e confirme.
+- **Restaurar do Google Drive** lista os backups da pasta, do mais recente para o mais antigo, com a data do envio e o resumo gravado no Drive (informação ainda não conferida). O backup escolhido passa pela mesma restauração do arquivo: conferência completa, resumo do arquivo conferido, cópia dos dados atuais antes de substituir e **Recarregar**. Com o Drive conectado, o próximo envio substitui o backup de hoje no Drive pelos dados restaurados.
 - O lembrete de backup considera também o último envio ao Drive.
 
 Para o recurso existir, o build precisa de um **ID do cliente OAuth** do Google, na variável `VITE_GOOGLE_CLIENT_ID`. Sem ela, a seção do Google Drive não aparece e o app funciona como antes.

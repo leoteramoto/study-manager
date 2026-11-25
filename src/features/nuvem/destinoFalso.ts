@@ -17,6 +17,7 @@ import {
 import {
   type DadosGravacao,
   type DestinoBackupNuvem,
+  ErroArquivoGrande,
   ErroNuvem,
   type OpcoesAutorizacao,
   type TipoErroNuvem,
@@ -151,7 +152,7 @@ export class DestinoFalso implements DestinoBackupNuvem {
     await this.operacao()
     const arquivo = this.arquivos.get(id)
     if (!arquivo || arquivo.lixeira) throw new ErroNuvem('falha', 'arquivo não encontrado')
-    if (!tamanhoNuvemAceito(arquivo.meta)) throw new ErroNuvem('falha', 'arquivo grande demais')
+    if (!tamanhoNuvemAceito(arquivo.meta)) throw new ErroArquivoGrande()
     return arquivo.conteudo
   }
 

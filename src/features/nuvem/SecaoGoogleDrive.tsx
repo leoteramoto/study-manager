@@ -18,6 +18,7 @@ import { obterConfiguracoes } from '@/db/configuracoesRepositorio'
 import type { EstadoNuvem } from '@/domain/backupNuvem'
 import { formatarDataHoraNoFuso } from '@/domain/tempo'
 import type { ResultadoEnvio } from './orquestrador'
+import { RestaurarDoDrive } from './RestaurarDoDrive'
 import { useEstadoNuvem, useNuvem, useTemTokenNuvem } from './useNuvem'
 
 /** Destino do link do indicador "Backup no Drive suspenso" (RN53). */
@@ -277,11 +278,19 @@ function Conectado({
           <TextoSituacao estado={estado} temToken={temToken} />
         </dd>
       </dl>
-      {suspenso && (
-        <p role="alert" className="text-sm">
-          {TEXTO_SUGESTAO_RESTAURAR}
-        </p>
-      )}
+      {/*
+        Uma instância só do RestaurarDoDrive, sempre na mesma posição: a
+        restauração limpa a suspensão, e trocar o componente de lugar o
+        desmontaria junto com o diálogo "Backup restaurado".
+      */}
+      <div className="grid gap-2">
+        {suspenso && (
+          <p role="alert" className="text-sm">
+            {TEXTO_SUGESTAO_RESTAURAR}
+          </p>
+        )}
+        <RestaurarDoDrive fuso={fuso} />
+      </div>
       {aviso && (
         <p role="status" className="text-sm">
           {aviso}

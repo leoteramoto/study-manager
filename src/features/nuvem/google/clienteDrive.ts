@@ -25,7 +25,7 @@ import {
   tamanhoNuvemAceito,
   urlSessaoUploadValida,
 } from '@/domain/backupNuvem'
-import { type DadosGravacao, ErroNuvem } from '../destino'
+import { type DadosGravacao, ErroArquivoGrande, ErroNuvem } from '../destino'
 
 const API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
@@ -186,7 +186,7 @@ export class ClienteDrive {
     )
     if (!metadados) throw new ErroNuvem('falha', 'metadados: resposta inválida')
     if (!tamanhoNuvemAceito(metadados)) {
-      throw new ErroNuvem('falha', 'metadados: arquivo grande demais ou sem tamanho')
+      throw new ErroArquivoGrande('metadados: arquivo grande demais ou sem tamanho')
     }
     const resposta = await this.requisitar(
       'download',
@@ -194,7 +194,7 @@ export class ClienteDrive {
     )
     const conteudo = await resposta.blob()
     if (!tamanhoBackupAceito(conteudo.size)) {
-      throw new ErroNuvem('falha', 'download: arquivo grande demais')
+      throw new ErroArquivoGrande('download: arquivo grande demais')
     }
     return conteudo.text()
   }

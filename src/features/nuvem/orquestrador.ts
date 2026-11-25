@@ -8,6 +8,7 @@
 import { liveQuery } from 'dexie'
 import type { BackupGerado } from '@/db/backupRepositorio'
 import { ErroNegocio } from '@/db/erros'
+import { MENSAGENS_BACKUP } from '@/domain/backup'
 import {
   obterEstadoNuvem,
   registrarConexaoNuvem,
@@ -31,7 +32,7 @@ import {
   nomeArquivoNuvem,
   referenciaDoDrive,
 } from '@/domain/backupNuvem'
-import { type DestinoBackupNuvem, ErroNuvem } from './destino'
+import { type DestinoBackupNuvem, ErroArquivoGrande, ErroNuvem } from './destino'
 
 export const NOME_LOCK_NUVEM = 'study-manager:nuvem'
 
@@ -46,7 +47,26 @@ export const MENSAGENS_NUVEM = {
     'A conexão com o Google Drive não foi concluída: a janela do Google foi fechada, bloqueada pelo navegador ou não respondeu. Tente de novo e, se preciso, permita janelas pop-up para este site.',
   falhaConexao:
     'Não foi possível conectar ao Google Drive. Verifique a conexão com a internet e tente de novo.',
+  restauracaoSemAutorizacao:
+    'Não foi possível acessar o Google Drive sem a autorização do Google: a janela foi fechada, bloqueada pelo navegador ou não respondeu. Tente de novo e, se preciso, permita janelas pop-up para este site.',
+  restauracaoOffline:
+    'Sem conexão com a internet. Verifique a conexão e tente de novo. Nenhum dado foi alterado.',
+  falhaLista: 'Não foi possível listar os backups do Google Drive. Tente de novo.',
+  falhaDownload:
+    'Não foi possível baixar o backup do Google Drive. Tente de novo. Nenhum dado foi alterado.',
 } as const
+
+/** Erro do destino na restauração, em mensagem amigável (RN47, RN51). */
+function erroDeRestauracao(erro: unknown, mensagemFalha: string): ErroNegocio {
+  if (erro instanceof ErroArquivoGrande) return new ErroNegocio(MENSAGENS_BACKUP.grande)
+  if (erro instanceof ErroNuvem && erro.tipo === 'semAutorizacao') {
+    return new ErroNegocio(MENSAGENS_NUVEM.restauracaoSemAutorizacao)
+  }
+  if (erro instanceof ErroNuvem && erro.tipo === 'offline') {
+    return new ErroNegocio(MENSAGENS_NUVEM.restauracaoOffline)
+  }
+  return new ErroNegocio(mensagemFalha)
+}
 
 /**
  * - `enviado`: o arquivo do dia foi gravado no Drive.
@@ -112,6 +132,18 @@ export interface OrquestradorNuvem {
   enviarAgora(opcoes?: { confirmado?: boolean }): Promise<ResultadoEnvio>
   /** Indicador "Reconectar Google Drive" (chamar de forma síncrona no clique). */
   reconectar(): Promise<ResultadoEnvio>
+  /**
+   * Backups do Drive para restaurar (RN47), do mais recente para o mais antigo.
+   * Chamar de forma síncrona no clique (pede o token). Falha: `ErroNegocio`
+   * com mensagem amigável.
+   */
+  listarBackupsParaRestaurar(): Promise<BackupNuvem[]>
+  /**
+   * Texto do backup escolhido, com o tamanho conferido antes e depois (RN47).
+   * Chamar de forma síncrona no clique. Falha: `ErroNegocio` amigável. Não
+   * valida o conteúdo: isso é do fluxo da restauração.
+   */
+  baixarBackupParaRestaurar(id: string): Promise<string>
   /** Espera as tarefas em andamento (testes e encerramento). */
   concluirPendentes(): Promise<void>
   encerrar(): void
@@ -435,6 +467,38 @@ export function criarOrquestradorNuvem(dependencias: DependenciasOrquestrador): 
           return enviar('automatico')
         })(),
       )
+    },
+
+    listarBackupsParaRestaurar() {
+      const autorizacao = pedirToken(false) // síncrono no clique (popup)
+      return (async () => {
+        if (autorizacao && !(await autorizacao)) {
+          throw new ErroNegocio(MENSAGENS_NUVEM.restauracaoSemAutorizacao)
+        }
+        try {
+          const atual = await obterEstadoNuvem()
+          const pastaId = await destino.garantirPasta(atual.pastaId)
+          return await destino.listarBackups(pastaId)
+        } catch (erro) {
+          registrarErro('lista', erro)
+          throw erroDeRestauracao(erro, MENSAGENS_NUVEM.falhaLista)
+        }
+      })()
+    },
+
+    baixarBackupParaRestaurar(id) {
+      const autorizacao = pedirToken(false) // síncrono no clique (popup)
+      return (async () => {
+        if (autorizacao && !(await autorizacao)) {
+          throw new ErroNegocio(MENSAGENS_NUVEM.restauracaoSemAutorizacao)
+        }
+        try {
+          return await destino.baixarBackup(id)
+        } catch (erro) {
+          registrarErro('download', erro)
+          throw erroDeRestauracao(erro, MENSAGENS_NUVEM.falhaDownload)
+        }
+      })()
     },
 
     async concluirPendentes() {

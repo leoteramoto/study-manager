@@ -27,6 +27,14 @@ export class ErroNuvem extends Error {
   }
 }
 
+/** Arquivo acima do limite de 50 MB (nos metadados ou depois de baixar). */
+export class ErroArquivoGrande extends ErroNuvem {
+  constructor(mensagem = 'arquivo grande demais') {
+    super('falha', mensagem)
+    this.name = 'ErroArquivoGrande'
+  }
+}
+
 export interface OpcoesAutorizacao {
   /** E-mail da conta conectada (`login_hint`), para pular a escolha de conta. */
   dicaEmail: string | null
