@@ -9,6 +9,7 @@ import { definirPlanejamento } from '@/db/planejamentoRepositorio'
 import { iniciarSessao, obterSessao } from '@/db/sessaoRepositorio'
 import type { Materia } from '@/db/tipos'
 import { renderizarComCronometro } from '@/test/comCronometro'
+import { ID_SONDA_HEARTBEAT } from '@/test/idSondaHeartbeat'
 import { CardCronometro } from './CardCronometro'
 import { reiniciarAudioParaTestes } from './motor/alertas'
 import { criarLiderancaManual } from './motor/lideranca'
@@ -48,18 +49,52 @@ async function esperarGravacoes() {
 }
 
 /**
- * Espera chegar ao banco um heartbeat gravado depois de `desde`. O motor pula
- * ticks enquanto uma gravação está em andamento; com a suíte rodando em
- * paralelo, a gravação pode demorar mais que alguns milissegundos reais, e sem
- * esta espera o passo seguinte veria mais de 30 s sem heartbeat e o motor
- * (corretamente) trataria como suspensão.
+ * Tempo limite dos testes deste arquivo (o padrão é 5 s). A espera
+ * determinística do heartbeat roda a cada passo do relógio e, com a suíte em
+ * paralelo, o teste que simula 28 min passa de 5 s.
+ */
+const TEMPO_LIMITE_TESTE_MS = 20_000
+vi.setConfig({ testTimeout: TEMPO_LIMITE_TESTE_MS })
+
+/**
+ * Limite real (não o relógio falso) para esperar um heartbeat. Menor que o
+ * tempo limite do teste: se estourar, o teste falha com a mensagem da espera,
+ * e não por tempo esgotado.
+ */
+const LIMITE_ESPERA_HEARTBEAT_MS = 8_000
+const MENSAGEM_ESPERA_HEARTBEAT = 'heartbeat não chegou ao banco/provedor'
+
+/**
+ * Espera um heartbeat gravado depois de `desde` **e** a chegada dele ao
+ * provedor (sonda de `renderizarComCronometro`). Sem isso, sob carga:
+ * - o `waitFor` não bastava: com o `setInterval` falsificado, ele só checa de
+ *   novo quando o DOM muda, e a espera estourava se a gravação demorasse;
+ * - o passo seguinte começava com o provedor ainda vendo o heartbeat anterior,
+ *   e o motor (corretamente) gravava um heartbeat antes da hora (aos 11 s em
+ *   vez de 15 s), deslocando os tempos que os testes conferem.
+ * O polling usa `performance.now()` e `setTimeout` reais, que não são falsificados.
  */
 async function esperarHeartbeatDesde(desde: number) {
-  await waitFor(async () => {
+  const limite = performance.now() + LIMITE_ESPERA_HEARTBEAT_MS
+  for (;;) {
     const sessao = await obterSessao()
-    if (sessao?.estado !== 'em_andamento') return
-    expect(Date.parse(sessao.ultimoHeartbeatEm)).toBeGreaterThan(desde)
-  })
+    if (sessao?.estado !== 'em_andamento') {
+      // Pausada ou encerrada: não há heartbeat; só deixa as gravações assentarem.
+      await esperarGravacoes()
+      return
+    }
+    const gravado = Date.parse(sessao.ultimoHeartbeatEm)
+    const recebido = screen.queryByTestId(ID_SONDA_HEARTBEAT)?.textContent
+    if (gravado > desde && recebido === sessao.ultimoHeartbeatEm) return
+    if (performance.now() > limite) {
+      expect(gravado, MENSAGEM_ESPERA_HEARTBEAT).toBeGreaterThan(desde)
+      expect(recebido, MENSAGEM_ESPERA_HEARTBEAT).toBe(sessao.ultimoHeartbeatEm)
+      return
+    }
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    })
+  }
 }
 
 /**
@@ -72,8 +107,9 @@ async function passar(ms: number, passo = 20 * SEG, comHeartbeat = true) {
     act(() => {
       vi.advanceTimersByTime(Math.min(passo, ms - feito))
     })
-    await esperarGravacoes()
+    // Com heartbeat, a espera determinística já cobre as gravações do passo.
     if (comHeartbeat) await esperarHeartbeatDesde(inicioDoPasso)
+    else await esperarGravacoes()
   }
 }
 

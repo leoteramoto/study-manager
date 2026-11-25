@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { ProvedorCronometro } from '@/features/cronometro/ProvedorCronometro'
 import { fonteTicksPrincipal, type FonteTicks } from '@/features/cronometro/motor/fonteTicks'
 import { criarLiderancaManual, type Lideranca } from '@/features/cronometro/motor/lideranca'
+import { SondaHeartbeat } from './SondaHeartbeat'
 
 interface Opcoes {
   lideranca?: Lideranca
@@ -23,6 +24,7 @@ export function renderizarComCronometro(elemento: ReactElement, opcoes: Opcoes =
         lideranca={lideranca}
       >
         {elemento}
+        <SondaHeartbeat />
       </ProvedorCronometro>
     </MemoryRouter>,
   )
