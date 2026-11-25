@@ -11,6 +11,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Os testes nunca usam o Client ID de um .env.local (o Vitest também o lê):
+    // o recurso do Drive só existe nos testes que injetam um orquestrador falso.
+    env: { VITE_GOOGLE_CLIENT_ID: '', VITE_DESTINO_NUVEM: '' },
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',

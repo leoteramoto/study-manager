@@ -122,6 +122,26 @@ describe('lista dos backups do Drive', () => {
     expect(itens[0]).toHaveTextContent(/Enviado em \d{2}\/\d{2}\/\d{4} às \d{2}:\d{2}/)
   })
 
+  it('singular e plural no resumo ("1 objetivo", "0 registros")', async () => {
+    const { destino } = await montar()
+    destino.semear(
+      pasta,
+      nomeArquivoNuvem('2026-11-21'),
+      appPropertiesDoBackup('2026-11-21', {
+        exportadoEm: '2026-11-21T12:00:00.000Z',
+        objetivos: 1,
+        materias: 1,
+        registros: 0,
+        registrosExcluidos: 0,
+      }),
+      conteudoValido,
+    )
+    const lista = await abrirLista()
+    expect(within(lista).getByRole('listitem')).toHaveTextContent(
+      'Informado pelo Drive, ainda não conferido: 1 objetivo, 1 matéria, 0 registros.',
+    )
+  })
+
   it('lista vazia tem mensagem própria', async () => {
     await montar()
     const lista = await abrirLista()

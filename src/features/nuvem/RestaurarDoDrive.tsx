@@ -23,10 +23,15 @@ interface Props {
 
 const formatoNumero = new Intl.NumberFormat('pt-BR')
 
+/** "1 objetivo", "2 objetivos", "0 objetivos". */
+function contar(quantidade: number, singular: string, plural: string): string {
+  return `${formatoNumero.format(quantidade)} ${quantidade === 1 ? singular : plural}`
+}
+
 function textoResumo(backup: BackupNuvem): string {
   const { resumo } = backup
   if (!resumo) return 'Resumo não informado pelo Drive.'
-  return `Informado pelo Drive, ainda não conferido: ${formatoNumero.format(resumo.objetivos)} objetivos, ${formatoNumero.format(resumo.materias)} matérias, ${formatoNumero.format(resumo.registros)} registros.`
+  return `Informado pelo Drive, ainda não conferido: ${contar(resumo.objetivos, 'objetivo', 'objetivos')}, ${contar(resumo.materias, 'matéria', 'matérias')}, ${contar(resumo.registros, 'registro', 'registros')}.`
 }
 
 /**
