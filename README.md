@@ -10,16 +10,16 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 
 ## Situação
 
-| Fase | Conteúdo                                        | Situação     |
-| ---- | ----------------------------------------------- | ------------ |
-| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída    |
-| 2    | Cadastro de objetivos e matérias                | Concluída    |
-| 3    | Planejamento e tela Principal                   | Concluída    |
-| 4    | Cronômetro                                      | Concluída    |
-| 5    | Estatísticas e lançamentos manuais              | Concluída    |
-| 6    | Backup, configurações e acabamento              | Concluída    |
-| 7    | Backup automático no Google Drive (opcional)    | Concluída    |
-| 8    | Publicação no GitHub Pages                      | Em andamento |
+| Fase | Conteúdo                                        | Situação  |
+| ---- | ----------------------------------------------- | --------- |
+| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
+| 2    | Cadastro de objetivos e matérias                | Concluída |
+| 3    | Planejamento e tela Principal                   | Concluída |
+| 4    | Cronômetro                                      | Concluída |
+| 5    | Estatísticas e lançamentos manuais              | Concluída |
+| 6    | Backup, configurações e acabamento              | Concluída |
+| 7    | Backup automático no Google Drive (opcional)    | Concluída |
+| 8    | Publicação no GitHub Pages                      | Concluída |
 
 ## Como usar
 
@@ -234,6 +234,7 @@ O app só pede o escopo `drive.file`: ele enxerga apenas a pasta e os arquivos q
 - Se os dados deste navegador tiverem menos registros que o último backup no Drive (por exemplo, num navegador novo), o envio automático é suspenso para não sobrescrever o backup bom, e o cabeçalho mostra **Backup no Drive suspenso**. Nesse caso, restaure o backup do Drive ou, se for mesmo o que você quer, use **Fazer backup agora** e confirme.
 - **Restaurar do Google Drive** lista os backups da pasta, do mais recente para o mais antigo, com a data do envio e o resumo gravado no Drive (informação ainda não conferida). O backup escolhido passa pela mesma restauração do arquivo: conferência completa, resumo do arquivo conferido, cópia dos dados atuais antes de substituir e **Recarregar**. Com o Drive conectado, o próximo envio substitui o backup de hoje no Drive pelos dados restaurados.
 - O lembrete de backup considera também o último envio ao Drive.
+- **Use um aparelho só, ou restaure sempre antes de estudar no outro.** O app não junta dados de dois aparelhos (por exemplo, casa e trabalho). O Drive guarda um arquivo por dia, e cada envio grava nele os dados completos do aparelho que enviou: o último a enviar sobrescreve o arquivo do dia. A restauração **substitui tudo**, não junta. E a proteção contra envio com menos registros não percebe esse caso, porque cada aparelho compara com o próprio último envio. Se você lançar estudos nos dois aparelhos sem restaurar antes, os registros de um deles podem se perder (fica só a cópia baixada antes de restaurar). Antes de estudar no outro aparelho, use **Restaurar do Google Drive** com o backup mais recente.
 - **Quando envia:** ao confirmar uma sessão do cronômetro; ao lançar, editar ou excluir um estudo (inclusive registro do cronômetro); em **Conectar** e em **Fazer backup agora**. Ações seguidas são agrupadas: o envio sai 5 s depois da última. Mudanças de cadastro, planejamento e configurações vão no próximo envio. Há **um arquivo por dia** (`study-manager-backup-AAAA-MM-DD.json`), sobrescrito ao longo do dia; ficam os 30 dias mais recentes, e os mais antigos vão para a lixeira do Drive.
 - **Nada espera o Google:** confirmar, lançar, editar e excluir funcionam sempre, mesmo sem internet ou com o popup bloqueado. Nesses casos o envio fica pendente e sai depois (quando a conexão volta ou pelo **Reconectar Google Drive**).
 - **A autorização do Google fica só na memória da aba**, nunca no disco. Ao recarregar a página (F5, reabrir o app ou o Chrome descartar a aba), o próximo clique que envia abre um popup do Google, que normalmente pisca e fecha sozinho. Se o navegador bloquear o popup, libere popups para o site.
