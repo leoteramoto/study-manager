@@ -156,6 +156,8 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda lint, for
 
 O caminho base é definido pela variável `VITE_BASE_PATH` (veja [`.env.example`](.env.example)). No CI ela vale `/<nome-do-repositório>/`; localmente, `/`. O `npm run verificar:build-base` (também no CI) gera o build com `/study-manager/` e confere que HTML, manifest, service worker, pré-cache, worker e sons ficam sob o caminho, que nenhum arquivo aponta para a raiz e que a CSP é a mesma do build na raiz. Se o repositório mudar de nome, mude também a constante `BASE` do script.
 
+**Proteção contra iframe:** o GitHub Pages não permite mandar `X-Frame-Options`, e a CSP por `<meta>` ignora `frame-ancestors`. Por isso o próprio app confere se está dentro de um quadro (iframe) e, se estiver, não monta nada (nem banco, nem service worker): mostra só o aviso "O Study Manager não abre dentro de outra página". Ele não tenta redirecionar a página de fora. Coberto por [`iframe.spec.ts`](tests/e2e/iframe.spec.ts).
+
 ## Backup e restauração
 
 Os dados ficam só no navegador. **Faça backups com frequência**: se o navegador apagar os dados do site, o backup é a única cópia.
