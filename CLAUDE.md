@@ -48,12 +48,35 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - Datas-hora gravadas em ISO UTC; datas de calendário em `YYYY-MM-DD`, calculadas no fuso configurado.
 
 ## Como trabalhar
-- Implemente **uma fase por vez** (veja o plano na especificação). Ao final de cada fase, mostre os resultados de lint, testes e build e **aguarde confirmação**.
+- Uma fase por vez (veja o plano na especificação). **O plano de cada fase precisa da aprovação do usuário**; aprovado, as etapas seguem as regras de "Autonomia" abaixo.
 - **Não invente regras de negócio** e não altere requisitos confirmados. Diante de ambiguidade, conflito ou caso não coberto, **pare e pergunte**.
 - Ao propor algo, separe o que é **requisito confirmado**, o que é **sugestão** e o que é **pendência**.
 - Não implemente itens das listas "Depois" ou "Fora de escopo" sem autorização.
 - Mantenha o README atualizado.
 - **Push ao fim de cada etapa:** depois do commit e com todas as verificações passando, rode `git push origin main`. Nunca use `--force` nem crie outra branch. Se o push falhar (rede, autenticação, rejeição), não tente contornar: mostre o erro e pare. Com o `gh` disponível, mostre também o resultado do CI do push (`gh run watch` ou `gh run list`).
+
+## Autonomia
+Pode fazer **sem perguntar**:
+- Executar todas as etapas de um plano de fase já aprovado, em sequência, sem parar entre elas.
+- Corrigir erros de lint, tipos, formatação e testes que você mesmo causou.
+- Decisões técnicas pequenas (nomes, organização de arquivos, mensagens de erro, ajustes de teste sem afrouxar asserções). Registre cada uma em uma linha no relatório final.
+- Commit e push ao fim de cada etapa, só com a bateria completa passando, e conferir o CI pelo `gh`. Se o CI falhar, corrija e tente de novo (no máximo 2 vezes); depois disso, pare.
+
+**Pare e pergunte** antes de:
+- Mudar regra de negócio, requisito confirmado ou a especificação além do que o plano previu.
+- Mudar o formato dos dados, a versão de qualquer banco ou o formato do backup.
+- Apagar ou sobrescrever dados do usuário, arquivos fora do projeto ou o histórico do git (force push, `reset --hard`, rebase em `main`).
+- Acrescentar dependência nova, serviço externo, domínio na CSP ou qualquer coisa com custo.
+- Mexer em segredos, `.env.local`, permissões ou configurações de conta (Google, GitHub).
+- Afrouxar ou remover asserção de teste, ou desligar uma verificação do CI.
+- Começar uma fase nova (o plano da fase continua precisando de aprovação).
+
+**Economia de tokens:**
+- Leia só os trechos necessários (grep, intervalos de linhas); não releia arquivos inteiros já lidos.
+- Durante o trabalho, rode só os testes afetados. A bateria completa (lint, cobertura, build, Prettier, audit, `verificar:dist-google` e E2E se a etapa mexeu em telas) roda uma vez, antes do commit.
+- Filtre saídas longas (`tail`, `grep`); nunca despeje logs inteiros.
+- Sem narração entre comandos. Relatório final em até 15 linhas: o que foi feito, commits, resultado da bateria e do CI, decisões tomadas sozinho e pendências.
+- Ao fim de cada fase, escreva o resumo de continuação e sugira `/compact`.
 
 ## Decisões técnicas da Fase 1
 - **HashRouter** (`/#/cadastro`): o GitHub Pages não tem fallback de SPA, e o hash funciona em qualquer hospedagem estática (e no futuro Tauri).
