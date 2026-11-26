@@ -30,7 +30,8 @@ const CSP_COM_GOOGLE = CSP_SEM_GOOGLE.replace(
   "script-src 'self' https://accounts.google.com/gsi/client",
 ).replace(
   "connect-src 'self'",
-  "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com",
+  // A revogação (Fase 8, etapa 3) libera só o caminho exato, não o domínio.
+  "connect-src 'self' https://accounts.google.com/gsi/ https://www.googleapis.com https://oauth2.googleapis.com/revoke",
 )
 
 const DOMINIOS = ['accounts.google.com', 'googleapis.com']

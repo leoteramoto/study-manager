@@ -16,11 +16,14 @@ function montarCsp(comGoogle: boolean): string {
   //   arquivo (o Google não permite empacotá-la);
   // - connect-src accounts.google.com/gsi/: chamadas internas do GIS
   //   (recomendação do Google);
-  // - connect-src www.googleapis.com: API do Drive (metadados, upload, download).
-  // A lista final é conferida com o Google de verdade (etapa 10 da Fase 7).
+  // - connect-src www.googleapis.com: API do Drive (metadados, upload, download);
+  // - connect-src oauth2.googleapis.com/revoke: só esse endereço, a revogação
+  //   do token no "Desconectar" (o GIS faz um POST para ele; bloqueado no teste
+  //   manual da Fase 8, etapa 3).
+  // A lista é conferida com o Google de verdade (Fase 7, etapa 10; Fase 8, etapa 3).
   const script = comGoogle ? "'self' https://accounts.google.com/gsi/client" : "'self'"
   const connect = comGoogle
-    ? "'self' https://accounts.google.com/gsi/ https://www.googleapis.com"
+    ? "'self' https://accounts.google.com/gsi/ https://www.googleapis.com https://oauth2.googleapis.com/revoke"
     : "'self'"
   return [
     "default-src 'self'",
