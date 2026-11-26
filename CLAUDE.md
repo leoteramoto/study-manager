@@ -48,6 +48,7 @@ Antes de dizer que uma tarefa está pronta, rode `lint`, `test` e `build`.
 - Datas-hora gravadas em ISO UTC; datas de calendário em `YYYY-MM-DD`, calculadas no fuso configurado.
 
 ## Como trabalhar
+- **Fase atual: Fase 8 (publicação no GitHub Pages).** Roteiro aprovado em `docs/planos/fase-08.md`.
 - Uma fase por vez (veja o plano na especificação). **O plano de cada fase precisa da aprovação do usuário**; aprovado, as etapas seguem as regras de "Autonomia" abaixo.
 - **Não invente regras de negócio** e não altere requisitos confirmados. Diante de ambiguidade, conflito ou caso não coberto, **pare e pergunte**.
 - Ao propor algo, separe o que é **requisito confirmado**, o que é **sugestão** e o que é **pendência**.
