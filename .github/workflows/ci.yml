@@ -38,6 +38,9 @@ jobs:
       - name: Formatação
         run: npm run format:check
 
+      - name: Seções principais do README
+        run: npm run verificar:readme
+
       - name: Testes (com cobertura mínima de 90% em src/domain)
         run: npm run test:coverage
 

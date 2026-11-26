@@ -172,5 +172,5 @@ Pode fazer **sem perguntar**:
 - **Testes:** nenhum teste acessa o Google. O Vitest também lê o `.env.local`, por isso o `vitest.config.ts` força `VITE_GOOGLE_CLIENT_ID` e `VITE_DESTINO_NUVEM` vazios. E2E com dois builds (normal, com `VITE_GOOGLE_CLIENT_ID` forçado vazio; e `dist-e2e-nuvem` na porta 4181 com `VITE_DESTINO_NUVEM=falso`), bloqueando requisições ao Google; axe nas telas do Drive em tela larga e celular, nos dois temas. Nos testes do cronômetro, a espera do heartbeat é determinística (sonda do provedor; polling de no máximo 8 s; arquivo com tempo limite de 20 s).
 - **Configuração:** `VITE_GOOGLE_CLIENT_ID` no `.env.local` (fora do git) e, no CI, como variável do repositório (público por natureza, não secret). No modo Teste do Google, a autorização vence em 7 dias. Guia no README.
 
-## Pendências para a próxima fase
-- **Checagem do README no CI:** falhar se o README perder as seções principais (conferir que os títulos de "Como usar", "Backup e restauração", "Backup no Google Drive" e "Deploy" continuam lá). Motivo: na etapa 9 da Fase 7, um script de edição truncou o README sem que nenhuma verificação acusasse (o `.prettierignore` não o cobre e nada mais o confere).
+## Decisões da Fase 8 (publicação no GitHub Pages)
+- **Checagem do README no CI:** `npm run verificar:readme` falha se faltar algum cabeçalho `## ` que comece por "Como usar", "Backup e restauração", "Backup no Google Drive" ou "Deploy". Aceita um caminho como argumento (controle negativo).
