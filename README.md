@@ -10,15 +10,16 @@ A especificação completa está em [`docs/ESPECIFICACAO.md`](docs/ESPECIFICACAO
 
 ## Situação
 
-| Fase | Conteúdo                                        | Situação  |
-| ---- | ----------------------------------------------- | --------- |
-| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída |
-| 2    | Cadastro de objetivos e matérias                | Concluída |
-| 3    | Planejamento e tela Principal                   | Concluída |
-| 4    | Cronômetro                                      | Concluída |
-| 5    | Estatísticas e lançamentos manuais              | Concluída |
-| 6    | Backup, configurações e acabamento              | Concluída |
-| 7    | Backup automático no Google Drive (opcional)    | Concluída |
+| Fase | Conteúdo                                        | Situação     |
+| ---- | ----------------------------------------------- | ------------ |
+| 1    | Fundação: projeto, layout, tema, banco, PWA, CI | Concluída    |
+| 2    | Cadastro de objetivos e matérias                | Concluída    |
+| 3    | Planejamento e tela Principal                   | Concluída    |
+| 4    | Cronômetro                                      | Concluída    |
+| 5    | Estatísticas e lançamentos manuais              | Concluída    |
+| 6    | Backup, configurações e acabamento              | Concluída    |
+| 7    | Backup automático no Google Drive (opcional)    | Concluída    |
+| 8    | Publicação no GitHub Pages                      | Em andamento |
 
 ## Como usar
 
@@ -145,18 +146,51 @@ scripts/          # scripts auxiliares (npm run icones, npm run sons)
 
 ## Deploy (GitHub Pages)
 
-O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda lint, formatação, testes com cobertura, `npm audit` e build em todo push e pull request. O deploy no GitHub Pages a partir da `main` já está pronto, mas **só é ativado de propósito**:
+O app é publicado em `https://<usuário>.github.io/study-manager/`. O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda lint, formatação, a checagem do README, testes com cobertura, `npm audit`, build e as verificações de build em todo push e pull request. O deploy a partir da `main` **só roda quando é ativado de propósito** (variável `DEPLOY_PAGES`).
 
-1. Crie o repositório no GitHub e envie o código.
-2. Em **Settings → Pages**, escolha **Source: GitHub Actions**.
-3. Em **Settings → Secrets and variables → Actions → Variables**, crie a variável `DEPLOY_PAGES` com o valor `true`.
-4. A partir daí, todo push na `main` que passar nas verificações publica o app em `https://<usuário>.github.io/<repositório>/`.
+### Publicar pela primeira vez
 
-**`npm audit`:** o CI falha com vulnerabilidades altas ou críticas. Hoje restam 4 moderadas, todas em dependências de desenvolvimento usadas só no build: `vite-plugin-pwa` → `workbox-build` → `glob`/`minimatch`. Nada disso vai para o app publicado (`npm audit --omit=dev` não encontra nenhuma). A correção sugerida pelo npm rebaixaria o `vite-plugin-pwa` para uma versão incompatível, então elas ficam até o `workbox-build` atualizar o `glob`.
+**No GitHub** (repositório → **Settings**):
+
+1. **General → Danger Zone → Change visibility:** deixe o repositório **público**. No plano gratuito, o Pages só publica repositórios públicos. Tudo fica visível: código, histórico e o e-mail de autor dos commits.
+2. **Pages → Build and deployment → Source:** escolha **GitHub Actions**.
+3. **Secrets and variables → Actions → aba Variables** (não **Secrets**): crie
+   - `VITE_GOOGLE_CLIENT_ID` com o ID do cliente OAuth (sem ela, o app sai sem o backup no Google Drive);
+   - `DEPLOY_PAGES` com o valor `true`.
+
+**No Google Cloud** (só se for usar o backup no Drive):
+
+1. Em **Google Auth Platform → Clientes**, abra o cliente do app e acrescente em **Origens JavaScript autorizadas** só `https://<usuário>.github.io`: sem `/study-manager`, sem barra no final. O Google não aceita caminho na origem. Veja também [Quando publicar no GitHub Pages](#quando-publicar-no-github-pages).
+2. Escolha o modo do app em **Google Auth Platform → Público**: manter **Em teste** (você reconecta a cada 7 dias) ou publicar (**Em produção**). Veja [Reconsentimento a cada 7 dias no modo Teste](#reconsentimento-a-cada-7-dias-no-modo-teste).
+
+Depois disso, todo push na `main` que passar nas verificações publica o app. O deploy aparece na aba **Actions** e o endereço em **Settings → Pages**.
+
+### Levar os dados do localhost para o endereço novo
+
+Os dados ficam no navegador e são separados por endereço: o app em `https://<usuário>.github.io/study-manager/` começa vazio, mesmo no mesmo computador e navegador. Nada passa sozinho.
+
+1. No endereço antigo (por exemplo, `http://localhost:4173`), faça um backup: **Configurações → Backup → Exportar backup**. Se usa o Drive, clique também em **Fazer backup agora**.
+2. Abra o endereço novo e restaure:
+   - **pelo arquivo:** **Configurações → Backup → Restaurar de um backup**; ou
+   - **pelo Drive:** **Conectar ao Google Drive** e depois **Restaurar do Google Drive**.
+3. **Restaure antes de fazer qualquer envio pelo endereço novo.** Com o app vazio, o envio automático fica suspenso para não sobrescrever o backup bom do Drive (**Backup no Drive suspenso**). A restauração tira a suspensão. Não use **Fazer backup agora** nem confirme o envio com o app vazio.
+4. Confira os dados e só então deixe de usar o endereço antigo.
+
+### Instalar o app
+
+Abra `https://<usuário>.github.io/study-manager/` no Chrome ou no Edge e use **Instalar app** (ícone na barra de endereço ou menu ⋮ → **Transmitir, salvar e compartilhar → Instalar página como app**). Um app instalado a partir do localhost é outro app, com outros dados: desinstale o antigo depois de migrar.
+
+### Segurança no GitHub Pages
+
+- **Origem compartilhada:** todos os sites do Pages de uma mesma conta dividem a origem `https://<usuário>.github.io`. Banco do navegador, `localStorage` e a origem autorizada no Google valem para todos eles. **Não publique outro site no Pages desta conta:** qualquer outro app em `https://<usuário>.github.io/...` poderia ler e apagar os dados deste e usar a autorização do Google Drive. Se precisar publicar outro site, use um domínio próprio para um dos dois ou outra conta do GitHub.
+- **Proteção contra iframe:** o GitHub Pages não permite mandar `X-Frame-Options`, e a CSP por `<meta>` ignora `frame-ancestors`. Por isso o próprio app confere se está dentro de um quadro (iframe) e, se estiver, não monta nada (nem banco, nem service worker): mostra só o aviso "O Study Manager não abre dentro de outra página". Ele não tenta redirecionar a página de fora. Coberto por [`iframe.spec.ts`](tests/e2e/iframe.spec.ts).
+- **CSP:** vai numa `<meta>` do `index.html`, porque o Pages não aceita cabeçalhos próprios. Sem cabeçalhos, também não há relatório de violações, e o service worker e o worker do cronômetro rodam sem CSP. Os dois só executam código do próprio app.
+
+### Detalhes do build
 
 O caminho base é definido pela variável `VITE_BASE_PATH` (veja [`.env.example`](.env.example)). No CI ela vale `/<nome-do-repositório>/`; localmente, `/`. O `npm run verificar:build-base` (também no CI) gera o build com `/study-manager/` e confere que HTML, manifest, service worker, pré-cache, worker e sons ficam sob o caminho, que nenhum arquivo aponta para a raiz e que a CSP é a mesma do build na raiz. Se o repositório mudar de nome, mude também a constante `BASE` do script.
 
-**Proteção contra iframe:** o GitHub Pages não permite mandar `X-Frame-Options`, e a CSP por `<meta>` ignora `frame-ancestors`. Por isso o próprio app confere se está dentro de um quadro (iframe) e, se estiver, não monta nada (nem banco, nem service worker): mostra só o aviso "O Study Manager não abre dentro de outra página". Ele não tenta redirecionar a página de fora. Coberto por [`iframe.spec.ts`](tests/e2e/iframe.spec.ts).
+**`npm audit`:** o CI falha com vulnerabilidades altas ou críticas. Hoje restam 4 moderadas, todas em dependências de desenvolvimento usadas só no build: `vite-plugin-pwa` → `workbox-build` → `glob`/`minimatch`. Nada disso vai para o app publicado (`npm audit --omit=dev` não encontra nenhuma). A correção sugerida pelo npm rebaixaria o `vite-plugin-pwa` para uma versão incompatível, então elas ficam até o `workbox-build` atualizar o `glob`.
 
 ## Backup e restauração
 
