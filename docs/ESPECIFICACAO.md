@@ -466,6 +466,12 @@ This database is **not** part of the backup file, survives a restore (RN33) and 
 - **Left out by decision, covered by automated tests:** blocked popup and "Reconectar" (6b); 401 after revoking access (6c); popup closed by hand (6d); empty browser in a private window (8); "Desconectar" (9); Firefox (11).
 - **Observed:** GIS logs "Cross-Origin-Opener-Policy policy would block the window.closed call" in the console when the popup opens. It comes from Google's script and did not affect the flow (the `popup_closed` callback was received when the consent was refused).
 
+### Manual test with the real Google: revocation under the CSP (Phase 8, step 3)
+- **Environment:** Chrome; `vite preview` of the production build with the GitHub Pages base path (`/study-manager/`) and the same CSP as Pages, on port 4173.
+- **First run:** "Desconectar" was blocked: the GIS `POST https://oauth2.googleapis.com/revoke` (xhr) showed `(blocked:csp)` and the console reported a `connect-src` violation; the app still disconnected locally (RN41), but Google access stayed active. Fix: that exact path (not the whole domain) was added to `connect-src`, only when `VITE_GOOGLE_CLIENT_ID` is set.
+- **Second run (new build):** "Desconectar" with confirmation sent the revoke `POST` with status **200**, no CSP violation, and the app returned to the disconnected state. Right after it, the app was still listed at myaccount.google.com/connections: Google may take a while to remove it from that list; if it persists, the user removes it by hand there.
+- **Observed:** on "Conectar", only the known COOP warnings ("Cross-Origin-Opener-Policy policy would block the window.closed call") from the GIS `requestAccessToken`: Google's noise, not a CSP violation.
+
 ### RF11 – Google Drive backup
 - RN40 to RN53.
 - *Acceptance:* without `VITE_GOOGLE_CLIENT_ID` nothing changes; confirming a session works normally with the popup blocked, closed or unanswered, leaving the backup `pendente`; several triggers within 5 s produce one upload; a pending state written before closing the tab is shown after reopening; fewer records than the last upload suspends automatic uploads and shows "Backup no Drive suspenso" in the header; connecting reads the reference count from the most recent backup in Drive; a 31st day moves the oldest file to the trash; restoring from Drive goes through validation and the copy of current data; "Desconectar" deletes nothing in Drive.
