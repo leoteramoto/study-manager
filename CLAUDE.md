@@ -174,3 +174,4 @@ Pode fazer **sem perguntar**:
 
 ## Decisões da Fase 8 (publicação no GitHub Pages)
 - **Checagem do README no CI:** `npm run verificar:readme` falha se faltar algum cabeçalho `## ` que comece por "Como usar", "Backup e restauração", "Backup no Google Drive" ou "Deploy". Aceita um caminho como argumento (controle negativo).
+- **Caminho base:** o build com `/study-manager/` já saía correto; nada foi corrigido. `npm run verificar:build-base` (no CI) confere HTML, manifest, registro e escopo do service worker, `navigateFallback`, pré-cache, worker, sons e a CSP igual à da raiz (sem e com o Google); a busca por literais na raiz tem controle positivo no build na raiz. E2E `caminho-base.spec.ts` num terceiro build (`dist-e2e-base`, porta 4182, worker de verdade), projetos `chromium-base` e `firefox-base`.

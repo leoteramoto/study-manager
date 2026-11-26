@@ -123,7 +123,7 @@ Os E2E cobrem os fluxos cadastro → planejamento → cronômetro → confirmaç
 
 O build usado pelo E2E define `VITE_FONTE_TICKS=principal`: o cronômetro passa a usar o `setInterval` da página em vez do Web Worker, para o `page.clock` do Playwright controlar o tempo. O worker só avisa "verifique agora" e nunca informa tempo, então o cálculo é o mesmo nos dois casos.
 
-O Playwright sobe **dois builds**. O normal, sem `VITE_GOOGLE_CLIENT_ID` (a variável é forçada vazia, então um `.env.local` com o ID real nunca entra no E2E), roda os testes de sempre e o [`sem-google.spec.ts`](tests/e2e/sem-google.spec.ts). O segundo, em `dist-e2e-nuvem/` na porta 4181, usa um Client ID de teste e `VITE_DESTINO_NUVEM=falso`: o backup no Google Drive existe, mas com um destino falso que guarda o "Drive" no `localStorage` e nunca fala com o Google. Ele roda os `*nuvem.spec.ts` (fluxos e acessibilidade do Drive), que bloqueiam e conferem que nenhuma requisição sai para `accounts.google.com` ou `googleapis.com`. O `npm run verificar:dist-google` confere que o destino falso não existe nos builds normais.
+O Playwright sobe **três builds**. O normal, sem `VITE_GOOGLE_CLIENT_ID` (a variável é forçada vazia, então um `.env.local` com o ID real nunca entra no E2E), roda os testes de sempre e o [`sem-google.spec.ts`](tests/e2e/sem-google.spec.ts). O segundo, em `dist-e2e-nuvem/` na porta 4181, usa um Client ID de teste e `VITE_DESTINO_NUVEM=falso`: o backup no Google Drive existe, mas com um destino falso que guarda o "Drive" no `localStorage` e nunca fala com o Google. Ele roda os `*nuvem.spec.ts` (fluxos e acessibilidade do Drive), que bloqueiam e conferem que nenhuma requisição sai para `accounts.google.com` ou `googleapis.com`. O `npm run verificar:dist-google` confere que o destino falso não existe nos builds normais. O terceiro, em `dist-e2e-base/` na porta 4182, é servido sob `/study-manager/`, como no GitHub Pages, com o worker do cronômetro de verdade. Ele roda o [`caminho-base.spec.ts`](tests/e2e/caminho-base.spec.ts): navega, toca o som de teste, confere o escopo do service worker e o worker, e verifica que nenhuma requisição sai do caminho.
 
 ## Atualizações do app
 
@@ -154,7 +154,7 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda lint, for
 
 **`npm audit`:** o CI falha com vulnerabilidades altas ou críticas. Hoje restam 4 moderadas, todas em dependências de desenvolvimento usadas só no build: `vite-plugin-pwa` → `workbox-build` → `glob`/`minimatch`. Nada disso vai para o app publicado (`npm audit --omit=dev` não encontra nenhuma). A correção sugerida pelo npm rebaixaria o `vite-plugin-pwa` para uma versão incompatível, então elas ficam até o `workbox-build` atualizar o `glob`.
 
-O caminho base é definido pela variável `VITE_BASE_PATH` (veja [`.env.example`](.env.example)). No CI ela vale `/<nome-do-repositório>/`; localmente, `/`.
+O caminho base é definido pela variável `VITE_BASE_PATH` (veja [`.env.example`](.env.example)). No CI ela vale `/<nome-do-repositório>/`; localmente, `/`. O `npm run verificar:build-base` (também no CI) gera o build com `/study-manager/` e confere que HTML, manifest, service worker, pré-cache, worker e sons ficam sob o caminho, que nenhum arquivo aponta para a raiz e que a CSP é a mesma do build na raiz. Se o repositório mudar de nome, mude também a constante `BASE` do script.
 
 ## Backup e restauração
 

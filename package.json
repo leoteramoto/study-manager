@@ -21,6 +21,7 @@
     "icones": "node scripts/gerar-icones.mjs",
     "sons": "node scripts/gerar-sons.mjs",
     "verificar:dist-google": "node scripts/verificar-dist-google.mjs",
+    "verificar:build-base": "node scripts/verificar-build-base.mjs",
     "verificar:readme": "node scripts/verificar-readme.mjs"
   },
   "dependencies": {

@@ -53,6 +53,9 @@ jobs:
       - name: Build sem Google (dist e CSP) e com Google (CSP)
         run: npm run verificar:dist-google
 
+      - name: Build com o caminho base do Pages (/study-manager/)
+        run: npm run verificar:build-base
+
   deploy:
     name: Deploy no GitHub Pages
     needs: verificar

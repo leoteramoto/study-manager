@@ -5,9 +5,14 @@ import { defineConfig, devices } from '@playwright/test'
 const PORTA = 4180
 /** Build com o backup na nuvem usando o destino falso (Fase 7). */
 const PORTA_NUVEM = 4181
+/** Build servido sob o caminho base do GitHub Pages (Fase 8). */
+const PORTA_BASE = 4182
+const CAMINHO_BASE = '/study-manager/'
 
 /** Specs que só rodam no build com o destino falso da nuvem. */
 const SPECS_NUVEM = /nuvem\.spec\.ts$/
+/** Specs que só rodam no build com o caminho base. */
+const SPECS_BASE = /caminho-base\.spec\.ts$/
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -20,8 +25,32 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', testIgnore: SPECS_NUVEM, use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', testIgnore: SPECS_NUVEM, use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'chromium',
+      testIgnore: [SPECS_NUVEM, SPECS_BASE],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      testIgnore: [SPECS_NUVEM, SPECS_BASE],
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'chromium-base',
+      testMatch: SPECS_BASE,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://localhost:${PORTA_BASE}${CAMINHO_BASE}`,
+      },
+    },
+    {
+      name: 'firefox-base',
+      testMatch: SPECS_BASE,
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: `http://localhost:${PORTA_BASE}${CAMINHO_BASE}`,
+      },
+    },
     {
       name: 'chromium-nuvem',
       testMatch: SPECS_NUVEM,
@@ -54,6 +83,15 @@ export default defineConfig({
         VITE_DESTINO_NUVEM: 'falso',
       },
       url: `http://localhost:${PORTA_NUVEM}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // Caminho base do GitHub Pages; ticks pelo worker de verdade. O preview
+      // lê o mesmo VITE_BASE_PATH e serve o app sob o caminho.
+      command: `npx vite build --outDir dist-e2e-base --emptyOutDir --logLevel warn && npx vite preview --outDir dist-e2e-base --port ${PORTA_BASE} --strictPort`,
+      env: { VITE_BASE_PATH: CAMINHO_BASE, VITE_GOOGLE_CLIENT_ID: '', VITE_DESTINO_NUVEM: '' },
+      url: `http://localhost:${PORTA_BASE}${CAMINHO_BASE}`,
       reuseExistingServer: false,
       timeout: 120_000,
     },
